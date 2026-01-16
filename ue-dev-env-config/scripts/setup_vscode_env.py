@@ -64,6 +64,7 @@ class ConfigGenerator:
         vars = {
             "engine_path": self.engine.as_posix(),
             "compiler_path": self.msvc.as_posix() if self.msvc else "",
+            "workspace_folder": self.root.as_posix(),  # 添加工作区绝对路径
             "project_includes": "",
             "browse_paths": "",
             "project_path": "",
@@ -81,7 +82,7 @@ class ConfigGenerator:
                     f'"{proj_dir}/Plugins/**",\n        '
                     f'"{proj_dir}/Intermediate/Build/Win64/UnrealEditor/Inc/**",'
                 ),
-                "browse_paths": f'"{proj_dir}/Source"'
+                "browse_paths": f'"{proj_dir}/Source",\n        '
             })
 
         # 插件名称检测

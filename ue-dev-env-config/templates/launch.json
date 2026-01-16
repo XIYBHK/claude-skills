@@ -5,10 +5,10 @@
       "name": "Debug UE Editor",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "$engine_path/Engine/Binaries/Win64/UnrealEditor.exe",
-      "args": ["\"$project_path\"", "-debug"],
+      "program": "${engine_path}/Engine/Binaries/Win64/UnrealEditor.exe",
+      "args": ["\"${project_path}\"", "-debug"],
       "stopAtEntry": false,
-      "cwd": "$engine_path/Engine/Binaries/Win64",
+      "cwd": "${engine_path}/Engine/Binaries/Win64",
       "environment": [],
       "console": "externalTerminal",
       "preLaunchTask": "Compile Plugin in Project (快速编译)"

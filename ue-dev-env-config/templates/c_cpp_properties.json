@@ -2,7 +2,7 @@
   "configurations": [
     {
       "name": "Win64",
-      "compileCommands": "$engine_path/compile_commands.json",
+      "compileCommands": "${workspace_folder}/compile_commands.json",
       "includePath": [
         "$${workspaceFolder}/**",
         "$engine_path/Engine/Source/**",

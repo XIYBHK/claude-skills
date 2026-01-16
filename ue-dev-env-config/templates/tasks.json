@@ -6,9 +6,9 @@
       "type": "shell",
       "command": "&",
       "args": [
-        "'$engine_path/Engine/Build/BatchFiles/RunUAT.bat'",
+        "'${engine_path}/Engine/Build/BatchFiles/RunUAT.bat'",
         "BuildPlugin",
-        "-Plugin='${workspaceFolder}/$plugin_name'",
+        "-Plugin='${workspaceFolder}/${plugin_name}'",
         "-Package='${workspaceFolder}/Packaged'",
         "-TargetPlatforms=Win64"
       ],
@@ -33,11 +33,11 @@
       "type": "shell",
       "command": "&",
       "args": [
-        "'$engine_path/Engine/Build/BatchFiles/Build.bat'",
-        "$project_nameEditor",
+        "'${engine_path}/Engine/Build/BatchFiles/Build.bat'",
+        "${project_name}Editor",
         "Win64",
         "Development",
-        "'$project_path'",
+        "'${project_path}'",
         "-WaitMutex"
       ],
       "options": {
@@ -59,8 +59,8 @@
       "type": "shell",
       "command": "&",
       "args": [
-        "'$engine_path/Engine/Build/BatchFiles/GenerateProjectFiles.bat'",
-        "'$project_path'"
+        "'${engine_path}/Engine/Build/BatchFiles/GenerateProjectFiles.bat'",
+        "'${project_path}'"
       ],
       "options": {
         "shell": {
@@ -80,10 +80,10 @@
       "type": "shell",
       "command": "&",
       "args": [
-        "'$engine_path/Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.exe'",
+        "'${engine_path}/Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.exe'",
         "-Mode=GenerateClangDatabase",
-        "-Project='$project_path'",
-        "$project_nameEditor",
+        "-Project='${project_path}'",
+        "${project_name}Editor",
         "Win64",
         "Development"
       ],

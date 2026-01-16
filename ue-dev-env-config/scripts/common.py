@@ -172,7 +172,12 @@ class EngineDetector:
         for drive in get_available_drives():
             drive_path = Path(drive)
             for base in EPIC_GAMES_PATHS:
-                base_path = drive_path / base
+                # Windows: 需要使用绝对路径拼接 (C:\ + base)
+                # Unix: 直接拼接 (/ + base)
+                if is_windows():
+                    base_path = Path(str(drive_path) + "\\" + base)
+                else:
+                    base_path = drive_path / base
                 if not base_path.exists():
                     continue
 
@@ -223,11 +228,19 @@ class VSMSVCDetector:
         bases = [Path(p) for p in VS2022_PATHS]
         for drive in get_available_drives():
             if drive != "C:":
-                bases.extend([
-                    Path(drive) / "VisualStudio/2022",
-                    Path(drive) / "Visual Studio/2022",
-                    Path(drive) / "VS2022"
-                ])
+                # Windows: 需要使用绝对路径拼接
+                if is_windows():
+                    bases.extend([
+                        Path(str(drive) + "\\VisualStudio\\2022"),
+                        Path(str(drive) + "\\Visual Studio\\2022"),
+                        Path(str(drive) + "\\VS2022")
+                    ])
+                else:
+                    bases.extend([
+                        Path(drive) / "VisualStudio/2022",
+                        Path(drive) / "Visual Studio/2022",
+                        Path(drive) / "VS2022"
+                    ])
 
         for base in bases:
             if not base.exists():
