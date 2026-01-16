@@ -56,28 +56,18 @@ if ([string]::IsNullOrWhiteSpace($UEEnginePath)) {
         $_.Root -match '^[A-Z]:\\$' -and (Test-Path $_.Root -ErrorAction SilentlyContinue)
     } | ForEach-Object { $_.Name + ":" }
 
-    # 常见的 UE 引擎安装路径
-    $EpicGamesPaths = @(
-        "Program Files\Epic Games",    # Windows 标准路径
-        "Epic Games",                  # 根目录 Epic Games
-        "UE"                           # 自定义路径 (如 D:\UE)
-    )
+    $EpicGamesPaths = @("Program Files\Epic Games", "Epic Games")
     $UEPaths = @()
 
     foreach ($drive in $AvailableDrives) {
         foreach ($epPath in $EpicGamesPaths) {
             $fullPath = Join-Path $drive $epPath
             if (Test-Path $fullPath -ErrorAction SilentlyContinue) {
-                $ueDirs = Get-ChildItem $fullPath -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match "^UE_" }
-                foreach ($ueDir in $ueDirs) {
-                    $enginePath = Join-Path $ueDir.FullName "Engine"
+                Get-ChildItem $fullPath -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match "^UE_" } | ForEach-Object {
+                    $enginePath = Join-Path $_.FullName "Engine"
                     if (Test-Path $enginePath -ErrorAction SilentlyContinue) {
-                        $version = $ueDir.Name -replace "UE_", ""
-                        $UEPaths += @{
-                            Version = $version
-                            Path = $ueDir.FullName
-                            OriginalName = $ueDir.Name
-                        }
+                        $version = $_.Name -replace "UE_", ""
+                        $UEPaths += @{Version = $version; Path = $_.FullName; OriginalName = $_.Name}
                     }
                 }
             }
@@ -86,14 +76,8 @@ if ([string]::IsNullOrWhiteSpace($UEEnginePath)) {
 
     # 如果项目指定了引擎版本，优先匹配
     if ($RequiredEngineVersion) {
-        # 手动循环匹配，避免 Where-Object 的空对象问题
-        $matchingEngines = @()
-        foreach ($path in $UEPaths) {
-            if ($path.Version -and $path.Version -eq $RequiredEngineVersion) {
-                $matchingEngines += $path
-            }
-        }
-        if ($matchingEngines.Count -gt 0) {
+        $matchingEngines = $UEPaths | Where-Object { $_.Version -eq $RequiredEngineVersion }
+        if ($matchingEngines) {
             $UEEnginePath = $matchingEngines[0].Path
             Write-Host "   Found UE ${RequiredEngineVersion}: $UEEnginePath" -ForegroundColor Green
         } else {
