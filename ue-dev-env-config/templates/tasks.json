@@ -1,0 +1,104 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Plugin - Development Editor",
+      "type": "shell",
+      "command": "&",
+      "args": [
+        "'$engine_path/Engine/Build/BatchFiles/RunUAT.bat'",
+        "BuildPlugin",
+        "-Plugin='${workspaceFolder}/$plugin_name'",
+        "-Package='${workspaceFolder}/Packaged'",
+        "-TargetPlatforms=Win64"
+      ],
+      "options": {
+        "shell": {
+          "executable": "powershell.exe",
+          "args": ["-ExecutionPolicy", "Bypass", "-Command"]
+        }
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Compile Plugin in Project (快速编译)",
+      "type": "shell",
+      "command": "&",
+      "args": [
+        "'$engine_path/Engine/Build/BatchFiles/Build.bat'",
+        "$project_nameEditor",
+        "Win64",
+        "Development",
+        "'$project_path'",
+        "-WaitMutex"
+      ],
+      "options": {
+        "shell": {
+          "executable": "powershell.exe",
+          "args": ["-ExecutionPolicy", "Bypass", "-Command"]
+        }
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Generate Project Files",
+      "type": "shell",
+      "command": "&",
+      "args": [
+        "'$engine_path/Engine/Build/BatchFiles/GenerateProjectFiles.bat'",
+        "'$project_path'"
+      ],
+      "options": {
+        "shell": {
+          "executable": "powershell.exe",
+          "args": ["-ExecutionPolicy", "Bypass", "-Command"]
+        }
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Rebuild IntelliSense Database",
+      "type": "shell",
+      "command": "&",
+      "args": [
+        "'$engine_path/Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.exe'",
+        "-Mode=GenerateClangDatabase",
+        "-Project='$project_path'",
+        "$project_nameEditor",
+        "Win64",
+        "Development"
+      ],
+      "options": {
+        "shell": {
+          "executable": "powershell.exe",
+          "args": ["-ExecutionPolicy", "Bypass", "-Command"]
+        }
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

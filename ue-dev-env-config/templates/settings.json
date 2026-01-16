@@ -1,0 +1,34 @@
+{
+  "files.associations": {
+    "*.cpp": "cpp",
+    "*.h": "cpp",
+    "*.hpp": "cpp",
+    "*.cxx": "cpp",
+    "*.cc": "cpp"
+  },
+  "editor.formatOnSave": false,
+  "editor.tabSize": 4,
+  "editor.insertSpaces": true,
+  "C_Cpp.default.cppStandard": "c++20",
+  "C_Cpp.default.cStandard": "c17",
+  "C_Cpp.intelliSenseEngine": "default",
+  "C_Cpp.errorSquiggles": "enabled",
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/Binaries": true,
+    "**/Build": true,
+    "**/Intermediate": true,
+    "**/Saved": true,
+    "**/DerivedDataCache": true
+  },
+  "files.watcherExclude": {
+    "**/Binaries/**": true,
+    "**/Build/**": true,
+    "**/Intermediate/**": true,
+    "**/Saved/**": true
+  }
+}
