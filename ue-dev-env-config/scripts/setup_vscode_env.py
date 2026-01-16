@@ -248,7 +248,7 @@ def step_check_configs(gen: ConfigGenerator) -> None:
 
 def step_generate_configs(gen: ConfigGenerator, project: Optional[Path]) -> None:
     """步骤 5: 生成配置"""
-    Color.print("[步骤 5/6] 生成 VSCode 配置...", Color.YELLOW)
+    Color.print("[步骤 5/7] 生成 VSCode 配置...", Color.YELLOW)
 
     # 基础配置（始终生成）
     for name in ["c_cpp_properties", "settings", "extensions"]:
@@ -264,14 +264,52 @@ def step_generate_configs(gen: ConfigGenerator, project: Optional[Path]) -> None
     Color.print("")
 
 
+def step_generate_compile_commands(
+    workspace_info: WorkspaceInfo,
+    engine: Path
+) -> None:
+    """步骤 6: 生成 compile_commands.json"""
+    Color.print("[步骤 6/7] 生成 compile_commands.json...", Color.YELLOW)
+
+    script_path = Path(__file__).parent / "generate_compile_commands.py"
+
+    import subprocess
+    try:
+        result = subprocess.run(
+            [sys.executable, str(script_path), str(workspace_info.root), str(engine)],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            encoding='utf-8',
+            errors='replace'
+        )
+
+        # 输出结果
+        if result.stdout:
+            for line in result.stdout.strip().split('\n'):
+                if line:
+                    print(line)
+
+        if result.returncode != 0:
+            Color.print(f"   ⚠ 生成失败，将使用 includePath 模式", Color.YELLOW)
+            if result.stderr:
+                Color.print(f"   错误: {result.stderr}", Color.RED)
+    except subprocess.TimeoutExpired:
+        Color.print(f"   ⚠ 生成超时，将使用 includePath 模式", Color.YELLOW)
+    except Exception as e:
+        Color.print(f"   ⚠ 生成失败: {e}，将使用 includePath 模式", Color.YELLOW)
+
+    Color.print("")
+
+
 def step_summary(
     workspace_info: WorkspaceInfo,
     engine: Path,
     project: Optional[Path],
     vs_info: Optional[VSInfo]
 ) -> None:
-    """步骤 6: 配置摘要"""
-    Color.print("[步骤 6/6] 配置摘要", Color.YELLOW)
+    """步骤 7: 配置摘要"""
+    Color.print("[步骤 7/7] 配置摘要", Color.YELLOW)
     Color.print("")
     Color.print("配置完成！", Color.GREEN)
     Color.print("")
@@ -351,6 +389,7 @@ def main() -> int:
     )
     step_check_configs(gen)
     step_generate_configs(gen, project)
+    step_generate_compile_commands(workspace_info, engine)
     step_summary(workspace_info, engine, project, vs_info)
 
     return 0
