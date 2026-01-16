@@ -97,7 +97,10 @@ class ConfigGenerator:
         """渲染模板"""
         template_path = self.templates / f"{name}.json"
         content = template_path.read_text(encoding='utf-8')
-        return Template(content).safe_substitute(**vars)
+        result = Template(content).safe_substitute(**vars)
+        # 修复 VSCode ${config:...} 变量被转义的问题
+        result = result.replace(r"\${", "${")
+        return result
 
     def generate(self, name: str) -> None:
         """生成配置文件"""
@@ -266,38 +269,63 @@ def step_generate_configs(gen: ConfigGenerator, project: Optional[Path]) -> None
 
 def step_generate_compile_commands(
     workspace_info: WorkspaceInfo,
-    engine: Path
+    engine: Path,
+    project: Optional[Path] = None
 ) -> None:
     """步骤 6: 生成 compile_commands.json"""
     Color.print("[步骤 6/7] 生成 compile_commands.json...", Color.YELLOW)
 
-    script_path = Path(__file__).parent / "generate_compile_commands.py"
+    # 如果有项目路径，使用 UBT 生成
+    if project:
+        script_path = Path(__file__).parent / "generate_compile_commands.py"
 
-    import subprocess
-    try:
-        result = subprocess.run(
-            [sys.executable, str(script_path), str(workspace_info.root), str(engine)],
-            capture_output=True,
-            text=True,
-            timeout=60,
-            encoding='utf-8',
-            errors='replace'
-        )
+        import subprocess
+        try:
+            result = subprocess.run(
+                [sys.executable, str(script_path), str(workspace_info.root), str(engine), str(project)],
+                capture_output=True,
+                text=True,
+                timeout=300,  # 5 分钟超时
+                encoding='utf-8',
+                errors='replace'
+            )
 
-        # 输出结果
-        if result.stdout:
-            for line in result.stdout.strip().split('\n'):
-                if line:
-                    print(line)
+            # 输出结果
+            if result.stdout:
+                for line in result.stdout.strip().split('\n'):
+                    if line:
+                        print(line)
 
-        if result.returncode != 0:
-            Color.print(f"   ⚠ 生成失败，将使用 includePath 模式", Color.YELLOW)
-            if result.stderr:
-                Color.print(f"   错误: {result.stderr}", Color.RED)
-    except subprocess.TimeoutExpired:
-        Color.print(f"   ⚠ 生成超时，将使用 includePath 模式", Color.YELLOW)
-    except Exception as e:
-        Color.print(f"   ⚠ 生成失败: {e}，将使用 includePath 模式", Color.YELLOW)
+            if result.returncode != 0:
+                Color.print(f"   ⚠ 生成失败，将使用 includePath 模式", Color.YELLOW)
+        except subprocess.TimeoutExpired:
+            Color.print(f"   ⚠ 生成超时，将使用 includePath 模式", Color.YELLOW)
+        except Exception as e:
+            Color.print(f"   ⚠ 生成失败: {e}，将使用 includePath 模式", Color.YELLOW)
+    else:
+        # 无项目路径，直接使用 Python 脚本
+        script_path = Path(__file__).parent / "generate_compile_commands.py"
+
+        import subprocess
+        try:
+            result = subprocess.run(
+                [sys.executable, str(script_path), str(workspace_info.root), str(engine)],
+                capture_output=True,
+                text=True,
+                timeout=60,
+                encoding='utf-8',
+                errors='replace'
+            )
+
+            if result.stdout:
+                for line in result.stdout.strip().split('\n'):
+                    if line:
+                        print(line)
+
+            if result.returncode != 0:
+                Color.print(f"   ⚠ 生成失败，将使用 includePath 模式", Color.YELLOW)
+        except Exception as e:
+            Color.print(f"   ⚠ 生成失败: {e}，将使用 includePath 模式", Color.YELLOW)
 
     Color.print("")
 
@@ -389,7 +417,7 @@ def main() -> int:
     )
     step_check_configs(gen)
     step_generate_configs(gen, project)
-    step_generate_compile_commands(workspace_info, engine)
+    step_generate_compile_commands(workspace_info, engine, project)
     step_summary(workspace_info, engine, project, vs_info)
 
     return 0

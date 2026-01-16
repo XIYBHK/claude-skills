@@ -2,102 +2,96 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Build Plugin - Development Editor",
+      "label": "Build Editor (Full & Formal)",
       "type": "shell",
-      "command": "&",
+      "command": "$${config:unreal.engine.path}/Engine/Build/BatchFiles/Build.bat",
       "args": [
-        "'${engine_path}/Engine/Build/BatchFiles/RunUAT.bat'",
-        "BuildPlugin",
-        "-Plugin='${workspaceFolder}/${plugin_name}'",
-        "-Package='${workspaceFolder}/Packaged'",
-        "-TargetPlatforms=Win64"
-      ],
-      "options": {
-        "shell": {
-          "executable": "powershell.exe",
-          "args": ["-ExecutionPolicy", "Bypass", "-Command"]
-        }
-      },
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
-      "presentation": {
-        "reveal": "always",
-        "panel": "new"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Compile Plugin in Project (快速编译)",
-      "type": "shell",
-      "command": "&",
-      "args": [
-        "'${engine_path}/Engine/Build/BatchFiles/Build.bat'",
-        "${project_name}Editor",
+        "$${config:unreal.project.name}Editor",
         "Win64",
         "Development",
-        "'${project_path}'",
+        "-Project=$${config:unreal.project.path}",
+        "-FromMsBuild"
+      ],
+      "group": { "kind": "build", "isDefault": true },
+      "presentation": { "reveal": "always", "panel": "new" },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Live Coding (Official)",
+      "type": "shell",
+      "command": "$${config:unreal.engine.path}/Engine/Build/BatchFiles/Build.bat",
+      "args": [
+        "$${config:unreal.project.name}Editor",
+        "Win64",
+        "Development",
+        "-Project=$${config:unreal.project.path}",
+        "-LiveCoding",
+        "-LiveCodingModules=$${config:unreal.engine.path}/Engine/Intermediate/LiveCodingModules.json",
+        "-LiveCodingManifest=$${config:unreal.engine.path}/Engine/Intermediate/LiveCoding.json",
         "-WaitMutex"
       ],
-      "options": {
-        "shell": {
-          "executable": "powershell.exe",
-          "args": ["-ExecutionPolicy", "Bypass", "-Command"]
-        }
-      },
       "group": "build",
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared",
-        "focus": true
-      },
+      "presentation": { "reveal": "always", "panel": "new" },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Build Game (Shipping)",
+      "type": "shell",
+      "command": "$${config:unreal.engine.path}/Engine/Build/BatchFiles/Build.bat",
+      "args": [
+        "$${config:unreal.project.name}",
+        "Win64",
+        "Shipping",
+        "-Project=$${config:unreal.project.path}",
+        "-FromMsBuild"
+      ],
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "new" },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Clean Project",
+      "type": "shell",
+      "command": "$${config:unreal.engine.path}/Engine/Build/BatchFiles/Build.bat",
+      "args": [
+        "$${config:unreal.project.name}Editor",
+        "Win64",
+        "Development",
+        "-Project=$${config:unreal.project.path}",
+        "-clean"
+      ],
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "new" },
       "problemMatcher": "$msCompile"
     },
     {
       "label": "Generate Project Files",
       "type": "shell",
-      "command": "&",
+      "command": "$${config:unreal.engine.path}/Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.exe",
       "args": [
-        "'${engine_path}/Engine/Build/BatchFiles/GenerateProjectFiles.bat'",
-        "'${project_path}'"
+        "-projectfiles",
+        "-Project=$${config:unreal.project.path}",
+        "-game",
+        "-rocket",
+        "-progress"
       ],
-      "options": {
-        "shell": {
-          "executable": "powershell.exe",
-          "args": ["-ExecutionPolicy", "Bypass", "-Command"]
-        }
-      },
       "group": "build",
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      },
+      "presentation": { "reveal": "always", "panel": "new" },
       "problemMatcher": []
     },
     {
       "label": "Rebuild IntelliSense Database",
       "type": "shell",
-      "command": "&",
+      "command": "$${config:unreal.engine.path}/Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.exe",
       "args": [
-        "'${engine_path}/Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.exe'",
         "-Mode=GenerateClangDatabase",
-        "-Project='${project_path}'",
-        "${project_name}Editor",
+        "-Project=$${config:unreal.project.path}",
+        "$${config:unreal.project.name}Editor",
         "Win64",
         "Development"
       ],
-      "options": {
-        "shell": {
-          "executable": "powershell.exe",
-          "args": ["-ExecutionPolicy", "Bypass", "-Command"]
-        }
-      },
       "group": "build",
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      },
+      "presentation": { "reveal": "always", "panel": "new" },
       "problemMatcher": []
     }
   ]

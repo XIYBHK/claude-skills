@@ -1,4 +1,7 @@
 {
+  "unreal.engine.path": "${engine_path}",
+  "unreal.project.name": "${project_name}",
+  "unreal.project.path": "${project_path}",
   "files.associations": {
     "*.cpp": "cpp",
     "*.h": "cpp",
