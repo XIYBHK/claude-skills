@@ -141,9 +141,35 @@
 
 ---
 
+## 版本号一致性检查（⚠️ 推送前必做）
+
+在推送版本之前，必须验证所有文件中的版本号是否一致！
+
+### 检查命令
+```bash
+# 检查所有版本号位置
+grep -n "XTOOLS_VERSION" "Source/XToolsCore/Public/XToolsDefines.h"
+grep -n "Version.*1\." "XTools.uplugin" "README.md"
+grep -n "v1\." "CLAUDE.md"
+```
+
+### 当前项目版本号位置清单
+| 文件 | 位置 | 当前版本 | 格式 |
+|------|------|---------|------|
+| XToolsDefines.h | LINE 15-17 | 1.9.3 | MAJOR.MINOR.PATCH |
+| XTools.uplugin | LINE 4 | 1.9.4 | VersionName |
+| README.md | LINE 6 | 1.9.4 | 版本徽章 |
+| CLAUDE.md | LINE 7 | v1.9.4 | 文档描述 |
+
+> **警告**：如果发现版本号不一致，必须先手动同步，然后再执行推送版本操作！
+
+---
+
 ## 版本号更新位置
 
-### XToolsDefines.h
+> **重要：必须更新以下4个文件中的版本号！**
+
+### 1️⃣ XToolsDefines.h（⚠️ 核心版本定义）
 ```cpp
 // Source/XToolsCore/Public/XToolsDefines.h
 
@@ -152,15 +178,28 @@
 #define XTOOLS_VERSION_PATCH 5  // 更新 PATCH 版本号
 ```
 
-### XTools.uplugin
+### 2️⃣ XTools.uplugin（⚠️ 插件版本）
 ```json
 // XTools.uplugin
 
 {
     "FileVersion": 3,
-    "Version": 2,  // 更新整数部分（每次发布递增）
+    "Version": 2,           // 更新整数部分（每次发布递增）
+    "VersionName": "1.9.5", // 更新版本字符串
     ...
 }
+```
+
+### 3️⃣ README.md（⚠️ 版本徽章）
+```markdown
+# XTools - Unreal Engine 5.3+ 实用工具插件
+
+[![Version](https://img.shields.io/badge/Version-1.9.5-brightgreen.svg)](https://github.com/XIYBHK/UE_XTools)
+```
+
+### 4️⃣ CLAUDE.md（⚠️ 文档描述）
+```markdown
+XTools 是一个为 Unreal Engine 5.3-5.7 设计的模块化插件系统（v1.9.5），提供蓝图节点和 C++ 功能库。
 ```
 
 ---
@@ -172,11 +211,13 @@
 docs: 更新 CHANGELOG.md v{版本号}
 ```
 
-### 提交文件
-- `Docs/版本变更/CHANGELOG.md`
-- `Docs/版本变更/UNRELEASED.md`
-- `Source/XToolsCore/Public/XToolsDefines.h`
-- `XTools.uplugin`
+### 提交文件（⚠️ 必须全部提交）
+- ✅ `Docs/版本变更/CHANGELOG.md`
+- ✅ `Docs/版本变更/UNRELEASED.md`
+- ✅ `Source/XToolsCore/Public/XToolsDefines.h`（**核心版本定义**）
+- ✅ `XTools.uplugin`（**插件版本**）
+- ✅ `README.md`（**版本徽章**）
+- ✅ `CLAUDE.md`（**文档描述**）
 
 ### 完整命令示例
 ```bash
@@ -184,7 +225,9 @@ docs: 更新 CHANGELOG.md v{版本号}
 git add "Docs/版本变更/CHANGELOG.md" \
         "Docs/版本变更/UNRELEASED.md" \
         "Source/XToolsCore/Public/XToolsDefines.h" \
-        "XTools.uplugin"
+        "XTools.uplugin" \
+        "README.md" \
+        "CLAUDE.md"
 
 # 2. 创建提交
 git commit -m "docs: 更新 CHANGELOG.md v1.9.5"
@@ -232,20 +275,40 @@ git diff --name-only
 - 3 个模块变更
 - 8 条更新记录
 
-更新版本号：
-- XToolsDefines.h: 1.9.4 → 1.9.5
-- XTools.uplugin: 1 → 2
+更新版本号（⚠️ 所有文件必须同步更新）：
+- ✅ XToolsDefines.h: 1.9.4 → 1.9.5
+- ✅ XTools.uplugin: Version 1 → 2, VersionName "1.9.4" → "1.9.5"
+- ✅ README.md: 版本徽章 1.9.4 → 1.9.5
+- ✅ CLAUDE.md: 描述版本 v1.9.4 → v1.9.5
 
 提交并推送：
 - 提交信息：docs: 更新 CHANGELOG.md v1.9.5
 - 推送到 origin/main
 
 已成功：
-- 更新 CHANGELOG.md
-- 清空 UNRELEASED.md
-- 更新版本号至 v1.9.5
-- 提交并推送到远程仓库
+- ✅ 更新 CHANGELOG.md
+- ✅ 清空 UNRELEASED.md
+- ✅ 更新版本号至 v1.9.5
+  - XToolsDefines.h: PATCH = 5
+  - XTools.uplugin: Version = 2, VersionName = "1.9.5"
+  - README.md: 版本徽章 = "1.9.5"
+  - CLAUDE.md: 描述版本 = v1.9.5
+- ✅ 提交并推送到远程仓库
 ```
+
+---
+
+## ⚠️ 版本号一致性风险
+
+### 常见问题
+1. **部分文件未更新**：导致用户看到错误的版本号
+2. **徽章与实际版本不符**：在 GitHub 上显示错误的版本
+3. **文档描述过期**：CLAUDE.md 或其他文档中的版本描述滞后
+
+### 解决方案
+- 推送版本前**必须**运行一致性检查命令
+- 建议在 Git 提交前用 `git diff` 检查所有修改的文件
+- 推送后立即在 GitHub 页面验证徽章显示是否正确
 
 ---
 

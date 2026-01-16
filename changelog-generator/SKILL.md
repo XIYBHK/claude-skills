@@ -34,7 +34,7 @@ description: 自动管理更新日志：整理变更到 UNRELEASED.md，推送�
 2. 按 CHANGELOG.md 格式整理内容
 3. 在 CHANGELOG.md 顶部插入新版本章节
 4. 清空 UNRELEASED.md（保留说明部分）
-5. 更新版本号（XToolsDefines.h + XTools.uplugin）
+5. 更新版本号（**7个文件必须全部同步更新**）
 6. 提交 git 并推送到远程仓库
 
 **格式要求**：见 [EXAMPLES.md](./EXAMPLES.md) - CHANGELOG.md 格式和示例
