@@ -12,6 +12,14 @@ UE C++ 代码简化优化器，用于优化、重构 Unreal Engine C++ 插件代
 - 代码安全性和性能优化
 - 完整的中文文档支持
 
+### [ue-dev-env-config](./ue-dev-env-config/)
+UE 开发环境配置工具，自动配置 VSCode IntelliSense 和 OpenCode LSP。
+
+- VSCode IntelliSense 配置
+- OpenCode LSP (clangd) 配置
+- 统一的 PowerShell 执行工具
+- 避免 Windows 中文编码和命令执行错误
+
 ### [git-commit](./git-commit/)
 Git 提交信息生成器，自动生成符合 Conventional Commits 规范的提交信息。
 
