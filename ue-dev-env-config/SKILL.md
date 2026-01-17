@@ -23,6 +23,19 @@ allowed-tools: Bash, Read, Write, Glob
 python scripts/setup_vscode_env.py
 ```
 
+注意：在 Bash shell 中，路径中的反斜杠需要用引号包裹，或者使用正斜杠（跨平台兼容）。
+
+```bash
+# 推荐：使用正斜杠（所有 shell 都支持）
+python scripts/setup_vscode_env.py
+
+# Bash/CMD：路径含空格时用引号
+python "scripts/setup_vscode_env.py"
+
+# 避免：Bash 中不用引号的反斜杠路径
+# python scripts\setup_vscode_env.py  # 可能出错
+```
+
 脚本会自动：
 1. 检测工作区类型（插件/项目）
 2. 搜索 UE 引擎安装

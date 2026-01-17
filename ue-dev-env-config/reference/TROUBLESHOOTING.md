@@ -132,6 +132,36 @@ python scripts/configure_opencode_json.py
 1. 按 F1 或 Ctrl+Shift+P
 2. 输入 "Reload Window" 并回车
 
+### 症状：运行脚本时出现路径错误
+
+**可能原因**：
+- Bash shell 中反斜杠被转义
+- 路径包含空格但未用引号包裹
+
+**解决方案**：
+```bash
+# 使用正斜杠（推荐，跨平台兼容）
+python scripts/setup_vscode_env.py
+
+# 或者用双引号包裹路径
+python "scripts\setup_vscode_env.py"
+
+# 避免这种写法（Bash 中会出错）
+# python scripts\setup_vscode_env.py
+```
+
+**示例场景**：
+```bash
+# 错误：Bash 中的反斜杠转义
+python C:\Users\...  # → 路径被破坏
+
+# 正确：使用正斜杠
+python C:/Users/...
+
+# 正确：用引号包裹
+python "C:\Users\..."
+```
+
 ### 症状：扩展安装失败
 
 **解决方案**：
