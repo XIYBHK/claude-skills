@@ -17,6 +17,31 @@ import zipfile
 from pathlib import Path
 from quick_validate import validate_skill
 
+
+def should_exclude(file_path):
+    """
+    Check if a file or directory should be excluded from the package.
+    
+    Args:
+        file_path: Path object to check
+        
+    Returns:
+        True if the file should be excluded, False otherwise
+    """
+    # Exclude __pycache__ directories
+    if '__pycache__' in file_path.parts:
+        return True
+    
+    # Exclude common Python cache files
+    if file_path.suffix in ['.pyc', '.pyo', '.pyd']:
+        return True
+    
+    # Exclude .DS_Store files (macOS)
+    if file_path.name == '.DS_Store':
+        return True
+    
+    return False
+
 # 配置 UTF-8 输出（修复 Windows 编码问题）
 if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -75,6 +100,10 @@ def package_skill(skill_path, output_dir=None):
         with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
             # Walk through the skill directory
             for file_path in skill_path.rglob('*'):
+                # Skip excluded files and directories
+                if should_exclude(file_path):
+                    continue
+                    
                 if file_path.is_file():
                     # Calculate the relative path within the zip
                     arcname = file_path.relative_to(skill_path.parent)
