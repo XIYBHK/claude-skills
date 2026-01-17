@@ -1,27 +1,19 @@
 ---
 name: ue-dev-env-config
-description: |
-  配置 Unreal Engine 开发环境，包括 VSCode IntelliSense、编译任务、调试配置和扩展推荐。
-
-  触发条件：
-  - 用户提到 "VSCode"、"IntelliSense"、"代码提示"
-  - UE 头文件无法识别、宏定义未定义
-  - 需要配置编译任务、调试环境
-  - 切换 UE 引擎版本后需要更新配置
-  - 首次设置 UE 开发环境
-
-  用途：
-  - 自动生成 c_cpp_properties.json、tasks.json、launch.json、settings.json、extensions.json
-  - 智能检测 UE 引擎、Visual Studio、项目路径
-  - 支持插件工作区（.uplugin）和项目工作区（.uproject）
-
-dependencies: python>=3.10
+description: 配置 Unreal Engine 开发环境的 VSCode 设置，包括 IntelliSense、编译任务、调试配置和扩展推荐。当需要在 VSCode 中开发 UE C++ 插件或项目时使用此 skill。自动检测 UE 引擎和 Visual Studio，支持插件和项目工作区。
 allowed-tools: Bash, Read, Write, Glob
 ---
 
 # UE 开发环境配置
 
 配置 Unreal Engine 开发环境的 VSCode 工作区设置。
+
+## 前置条件
+
+- **Python 3.7+**：脚本使用标准库，无需安装额外依赖
+- **Windows 系统**：脚本针对 Windows 平台的 UE 开发环境设计
+- **Visual Studio**：需要安装 MSVC 编译器（UE 开发必需）
+- **Unreal Engine**：已安装的 UE 引擎（脚本会自动检测）
 
 ## 快速开始
 
@@ -66,9 +58,9 @@ python scripts/setup_vscode_env.py --is-project
 
 ## 详细说明
 
-- **配置文件详解**: See [CONFIG_DETAILS.md](references/CONFIG_DETAILS.md)
-- **故障排查**: See [TROUBLESHOOTING.md](references/TROUBLESHOOTING.md)
-- **实现细节**: See [IMPLEMENTATION.md](references/IMPLEMENTATION.md)
+- **配置文件详解**: See [CONFIG_DETAILS.md](reference/CONFIG_DETAILS.md)
+- **故障排查**: See [TROUBLESHOOTING.md](reference/TROUBLESHOOTING.md)
+- **实现细节**: See [IMPLEMENTATION.md](reference/IMPLEMENTATION.md)
 
 ## 配置完成后
 

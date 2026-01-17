@@ -108,7 +108,7 @@ class ConfigGenerator:
         content = self._render_template(name, vars)
         output_path = self.vscode / f"{name}.json"
         output_path.write_text(content, encoding='utf-8')
-        Color.print(f"   ✓ 已创建 {name}.json", Color.GREEN)
+        Color.print(f"   [OK] 已创建 {name}.json", Color.GREEN)
 
     def check_existing(self) -> list[str]:
         """检查现有配置文件"""
@@ -131,15 +131,15 @@ def step_workspace() -> WorkspaceInfo:
     info = WorkspaceDetector.detect(root)
     match info.type:
         case "Plugin":
-            Color.print(f"   工作区: 插件工作区 🔌", Color.GREEN)
+            Color.print(f"   工作区: 插件工作区", Color.GREEN)
             if info.file:
                 Color.print(f"   插件文件: {info.file}", Color.GRAY)
         case "Project":
-            Color.print(f"   工作区: 项目工作区 📁", Color.GREEN)
+            Color.print(f"   工作区: 项目工作区", Color.GREEN)
             if info.file:
                 Color.print(f"   项目文件: {info.file}", Color.GRAY)
         case _:
-            Color.print(f"   工作区: 源码工作区 📝", Color.CYAN)
+            Color.print(f"   工作区: 源码工作区", Color.CYAN)
             Color.print(f"   (未找到 .uplugin 或 .uproject)", Color.GRAY)
 
     Color.print("")
@@ -156,11 +156,11 @@ def step_engine(args: argparse.Namespace) -> Path:
     else:
         engines = EngineDetector.detect()
         if not engines:
-            Color.print("   ✗ 未找到 UE 引擎！", Color.RED)
+            Color.print("   [ERROR] 未找到 UE 引擎！", Color.RED)
             Color.print("   请确保 UE 已安装或使用 -e 指定路径", Color.YELLOW)
             sys.exit(1)
 
-        Color.print(f"   ✓ 找到 {len(engines)} 个 UE 引擎", Color.GREEN)
+        Color.print(f"   [OK] 找到 {len(engines)} 个 UE 引擎", Color.GREEN)
         for e in engines:
             Color.print(f"     - {e.version} ({e.engine_type}): {e.path}", Color.GRAY)
 
@@ -187,8 +187,8 @@ def step_vs() -> Optional[VSInfo]:
 
     vs_info = VSMSVCDetector.detect()
     if vs_info:
-        Color.print(f"   ✓ 找到 VS 2022 {vs_info.edition}", Color.GREEN)
-        Color.print(f"   ✓ MSVC: {vs_info.msvc_path}", Color.GREEN)
+        Color.print(f"   [OK] 找到 VS 2022 {vs_info.edition}", Color.GREEN)
+        Color.print(f"   [OK] MSVC: {vs_info.msvc_path}", Color.GREEN)
     else:
         Color.print(f"   未找到 VS 2022", Color.YELLOW)
         Color.print(f"   请安装 VS 2022（含 C++ 工作负载）", Color.YELLOW)
@@ -211,7 +211,7 @@ def step_project(
         found = ProjectPathDetector.find(workspace_info.root)
 
         if found:
-            Color.print(f"\n   ✓ 找到 {len(found)} 个 UE 项目", Color.GREEN)
+            Color.print(f"\n   [OK] 找到 {len(found)} 个 UE 项目", Color.GREEN)
             if args.non_interactive or len(found) == 1:
                 project = found[0]
                 Color.print(f"   -> 自动选择: {project}", Color.CYAN)
@@ -243,9 +243,9 @@ def step_check_configs(gen: ConfigGenerator) -> None:
 
     existing = gen.check_existing()
     if existing:
-        Color.print(f"   ℹ 现有配置将被覆盖: {', '.join(existing)}", Color.CYAN)
+        Color.print(f"   [INFO] 现有配置将被覆盖: {', '.join(existing)}", Color.CYAN)
     else:
-        Color.print("   ✓ 无现有配置，将创建新文件", Color.GREEN)
+        Color.print("   [OK] 无现有配置，将创建新文件", Color.GREEN)
     Color.print("")
 
 
@@ -285,7 +285,7 @@ def step_generate_compile_commands(
                 [sys.executable, str(script_path), str(workspace_info.root), str(engine), str(project)],
                 capture_output=True,
                 text=True,
-                timeout=300,  # 5 分钟超时
+                timeout=300,  # 5 分钟超时（UBT 生成 compile_commands）
                 encoding='utf-8',
                 errors='replace'
             )
@@ -297,11 +297,11 @@ def step_generate_compile_commands(
                         print(line)
 
             if result.returncode != 0:
-                Color.print(f"   ⚠ 生成失败，将使用 includePath 模式", Color.YELLOW)
+                Color.print(f"   [WARN] 生成失败，将使用 includePath 模式", Color.YELLOW)
         except subprocess.TimeoutExpired:
-            Color.print(f"   ⚠ 生成超时，将使用 includePath 模式", Color.YELLOW)
+            Color.print(f"   [WARN] 生成超时（超过 5 分钟），将使用 includePath 模式", Color.YELLOW)
         except Exception as e:
-            Color.print(f"   ⚠ 生成失败: {e}，将使用 includePath 模式", Color.YELLOW)
+            Color.print(f"   [WARN] 生成失败: {e}，将使用 includePath 模式", Color.YELLOW)
     else:
         # 无项目路径，直接使用 Python 脚本
         script_path = Path(__file__).parent / "generate_compile_commands.py"
@@ -312,7 +312,7 @@ def step_generate_compile_commands(
                 [sys.executable, str(script_path), str(workspace_info.root), str(engine)],
                 capture_output=True,
                 text=True,
-                timeout=60,
+                timeout=60,  # 1 分钟超时（Python 后备方案生成）
                 encoding='utf-8',
                 errors='replace'
             )
@@ -323,9 +323,9 @@ def step_generate_compile_commands(
                         print(line)
 
             if result.returncode != 0:
-                Color.print(f"   ⚠ 生成失败，将使用 includePath 模式", Color.YELLOW)
+                Color.print(f"   [WARN] 生成失败，将使用 includePath 模式", Color.YELLOW)
         except Exception as e:
-            Color.print(f"   ⚠ 生成失败: {e}，将使用 includePath 模式", Color.YELLOW)
+            Color.print(f"   [WARN] 生成失败: {e}，将使用 includePath 模式", Color.YELLOW)
 
     Color.print("")
 

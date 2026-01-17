@@ -263,7 +263,7 @@ winget install LLVM.LLVM --accept-package-agreements --accept-source-agreements
 # 验证安装
 $verifyVersion = & clangd --version
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "   ✓ clangd 已安装" -ForegroundColor Green
+    Write-Host "   [OK] clangd 已安装" -ForegroundColor Green
 }
 ```
 
@@ -349,7 +349,7 @@ $config.configurations[0].compileCommands = $compileCommandsPath
 
 ```powershell
 catch {
-    Write-Host "   ⚠️  JSON 解析失败，使用文本替换模式" -ForegroundColor Yellow
+    Write-Host "   [WARN] JSON 解析失败，使用文本替换模式" -ForegroundColor Yellow
 
     # 替换引擎路径（正则表达式）
     $content = $content -replace "'[A-Z]:/[^']*?/Epic Games/UE_[\d\.]+", "'$UEEnginePath'"

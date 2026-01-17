@@ -296,7 +296,7 @@ class ClangdDetector:
                 ['clangd', '--version'],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5  # 5 秒超时（版本检查应该很快）
             )
             if result.returncode == 0:
                 return True, result.stdout.strip()

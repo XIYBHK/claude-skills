@@ -47,14 +47,14 @@ class OpencodeConfigGenerator:
 
         # 检查 compile_commands.json 是否存在
         if not compile_commands_path.exists():
-            Color.print(f"   ⚠ 警告: compile_commands.json 不存在", Color.YELLOW)
+            Color.print(f"   [WARN] 警告: compile_commands.json 不存在", Color.YELLOW)
             Color.print(f"   路径: {compile_commands_path}", Color.YELLOW)
             Color.print(f"   IntelliSense 可能不准确", Color.YELLOW)
             print()
             Color.print(f"   建议先运行 UE 项目生成或使用 VSCode 编译任务生成", Color.GRAY)
             print()
         else:
-            Color.print(f"   ✓ 找到 compile_commands.json", Color.GREEN)
+            Color.print(f"   [OK] 找到 compile_commands.json", Color.GREEN)
 
         # 生成配置
         config = {
@@ -78,7 +78,7 @@ class OpencodeConfigGenerator:
         with open(config_file, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=4, ensure_ascii=False)
 
-        Color.print(f"   ✓ 已生成 opencode.json", Color.GREEN)
+        Color.print(f"   [OK] 已生成 opencode.json", Color.GREEN)
         Color.print(f"   位置: {config_file}", Color.GRAY)
 
         return config_file
@@ -94,20 +94,20 @@ def step_detect_engine(args: argparse.Namespace) -> EngineInfo:
 
     if args.engine_path:
         engine_path = Path(args.engine_path)
-        Color.print(f"   ✓ 使用指定的引擎路径: {engine_path}", Color.GREEN)
+        Color.print(f"   [OK] 使用指定的引擎路径: {engine_path}", Color.GREEN)
         # 验证引擎路径
         if not (engine_path / "Engine").exists():
-            Color.print(f"   ✗ 无效的引擎路径", Color.RED)
+            Color.print(f"   [ERROR] 无效的引擎路径", Color.RED)
             sys.exit(1)
         return EngineInfo(version="Custom", path=engine_path, engine_type="Manual")
 
     engines = EngineDetector.detect()
     if not engines:
-        Color.print("   ✗ 未找到 UE 引擎安装！", Color.RED)
+        Color.print("   [ERROR] 未找到 UE 引擎安装！", Color.RED)
         print()
         sys.exit(1)
 
-    Color.print(f"   ✓ 找到 {len(engines)} 个 UE 引擎", Color.GREEN)
+    Color.print(f"   [OK] 找到 {len(engines)} 个 UE 引擎", Color.GREEN)
     for engine in engines:
         Color.print(f"     - {engine}", Color.GRAY)
 
@@ -128,9 +128,9 @@ def step_detect_engine(args: argparse.Namespace) -> EngineInfo:
             if 0 <= idx < len(engines):
                 Color.print(f"   -> 已选择: {engines[idx].path}", Color.CYAN)
                 return engines[idx]
-            Color.print(f"   ✗ 无效选择，请输入 0-{len(engines)-1}", Color.RED)
+            Color.print(f"   [ERROR] 无效选择，请输入 0-{len(engines)-1}", Color.RED)
         except ValueError:
-            Color.print("   ✗ 请输入有效数字", Color.RED)
+            Color.print("   [ERROR] 请输入有效数字", Color.RED)
         except KeyboardInterrupt:
             print()
             Color.print("\n操作已取消", Color.YELLOW)
@@ -143,11 +143,11 @@ def step_verify_engine(engine: EngineInfo) -> None:
 
     engine_dir = engine.path / "Engine"
     if not engine_dir.exists():
-        Color.print(f"   ✗ 无效的引擎路径: {engine.path}", Color.RED)
+        Color.print(f"   [ERROR] 无效的引擎路径: {engine.path}", Color.RED)
         Color.print(f"   未找到 Engine 目录", Color.RED)
         sys.exit(1)
 
-    Color.print("   ✓ 引擎路径验证通过", Color.GREEN)
+    Color.print("   [OK] 引擎路径验证通过", Color.GREEN)
     print()
 
 
@@ -170,13 +170,13 @@ def print_summary(engine: EngineInfo, config_file: Path) -> None:
     Color.print("╚══════════════════════════════════════════════════════════╝", Color.GREEN)
     print()
 
-    Color.print("📋 配置摘要:", Color.CYAN)
+    Color.print("配置摘要:", Color.CYAN)
     Color.print(f"   UE 引擎路径: {engine.path}", Color.WHITE)
     Color.print(f"   opencode.json: {config_file}", Color.WHITE)
     Color.print(f"   compile_commands.json: {engine.path / 'compile_commands.json'}", Color.WHITE)
     print()
 
-    Color.print("📝 下一步操作:", Color.CYAN)
+    Color.print("下一步操作:", Color.CYAN)
     print()
     Color.print("   1. 验证 opencode.json 配置", Color.WHITE)
     Color.print(f"      → 打开: {config_file}", Color.GRAY)
@@ -191,7 +191,7 @@ def print_summary(engine: EngineInfo, config_file: Path) -> None:
     Color.print("      → 验证 LSP 状态（查看 OpenCode 日志）", Color.GRAY)
     print()
 
-    Color.print("✨ OpenCode LSP 配置完成！", Color.GREEN)
+    Color.print("OpenCode LSP 配置完成！", Color.GREEN)
     print()
 
 

@@ -44,27 +44,27 @@ class ClangdInstaller:
                  '--accept-package-agreements', '--accept-source-agreements'],
                 capture_output=True,
                 text=True,
-                timeout=600
+                timeout=600  # 10 分钟超时（LLVM 安装包约 356 MB）
             )
 
             if result.returncode == 0:
-                Color.print("\n✓ LLVM.LLVM 安装成功！", Color.GREEN)
+                Color.print("\n[OK] LLVM.LLVM 安装成功！", Color.GREEN)
                 Color.print("clangd 已自动安装到系统中", Color.GREEN)
                 return True
             else:
-                Color.print("\n✗ LLVM.LLVM 安装失败", Color.RED)
+                Color.print("\n[ERROR] LLVM.LLVM 安装失败", Color.RED)
                 Color.print(f"错误信息: {result.stderr}", Color.RED)
                 return False
 
         except subprocess.TimeoutExpired:
-            Color.print("\n✗ 安装超时", Color.RED)
+            Color.print("\n[ERROR] 安装超时", Color.RED)
             return False
         except FileNotFoundError:
-            Color.print("\n✗ 未找到 winget 命令", Color.RED)
+            Color.print("\n[ERROR] 未找到 winget 命令", Color.RED)
             Color.print("请确保 Windows 10/11 已安装 App Installer", Color.YELLOW)
             return False
         except Exception as e:
-            Color.print(f"\n✗ 安装错误: {e}", Color.RED)
+            Color.print(f"\n[ERROR] 安装错误: {e}", Color.RED)
             return False
 
     @staticmethod
@@ -87,7 +87,7 @@ class ClangdInstaller:
 
             # 检查是否已在 PATH 中
             if llvm_path_str in current_path:
-                Color.print("   ✓ LLVM 已在 PATH 中", Color.GREEN)
+                Color.print("   [OK] LLVM 已在 PATH 中", Color.GREEN)
                 return True
 
             # 添加到 PATH
@@ -98,14 +98,14 @@ class ClangdInstaller:
                 check=True
             )
 
-            Color.print(f"   ✓ 已添加 LLVM 到用户 PATH", Color.GREEN)
+            Color.print(f"   [OK] 已添加 LLVM 到用户 PATH", Color.GREEN)
             Color.print(f"   路径: {llvm_path_str}", Color.WHITE)
-            Color.print("\n   ⚠ 注意：新 PATH 在新终端会话中生效", Color.YELLOW)
+            Color.print("\n   [WARN] 注意：新 PATH 在新终端会话中生效", Color.YELLOW)
             Color.print("   → 请重新启动终端或 OpenCode", Color.GRAY)
             return True
 
         except Exception as e:
-            Color.print(f"   ✗ 添加到 PATH 失败: {e}", Color.RED)
+            Color.print(f"   [ERROR] 添加到 PATH 失败: {e}", Color.RED)
             return False
 
 
@@ -121,15 +121,15 @@ def step_check_clangd() -> tuple[bool, Optional[Path], Optional[str]]:
     llvm_path = ClangdDetector.find_llvm_path()
 
     if is_installed:
-        Color.print("   ✓ clangd 已安装！", Color.GREEN)
+        Color.print("   [OK] clangd 已安装！", Color.GREEN)
         Color.print(f"   版本信息: {version_info}", Color.WHITE)
     else:
-        Color.print("   ✗ clangd 未安装或不在 PATH 中", Color.YELLOW)
+        Color.print("   [ERROR] clangd 未安装或不在 PATH 中", Color.YELLOW)
 
     if llvm_path:
-        Color.print(f"   ✓ 找到 LLVM: {llvm_path}", Color.GREEN)
+        Color.print(f"   [OK] 找到 LLVM: {llvm_path}", Color.GREEN)
     else:
-        Color.print("   ⚠ 未找到 LLVM 安装路径", Color.YELLOW)
+        Color.print("   [WARN] 未找到 LLVM 安装路径", Color.YELLOW)
 
     print()
     return is_installed, llvm_path, version_info
@@ -144,7 +144,7 @@ def step_install(llvm_path: Optional[Path]) -> bool:
 
     if not is_windows():
         Color.print("[步骤 1/4] 安装 clangd", Color.YELLOW)
-        Color.print("\n✗ 自动安装仅支持 Windows 平台", Color.RED)
+        Color.print("\n[ERROR] 自动安装仅支持 Windows 平台", Color.RED)
         Color.print("\n请手动安装 clangd：", Color.YELLOW)
         Color.print("  Linux: sudo apt install clangd", Color.GRAY)
         Color.print("  Mac: brew install llvm", Color.GRAY)
@@ -169,10 +169,10 @@ def step_install(llvm_path: Optional[Path]) -> bool:
     llvm_path = ClangdDetector.find_llvm_path()
 
     if is_installed and llvm_path:
-        Color.print("   ✓ clangd 验证成功！", Color.GREEN)
+        Color.print("   [OK] clangd 验证成功！", Color.GREEN)
         Color.print(f"   版本: {version_info}", Color.WHITE)
     else:
-        Color.print("   ⚠ clangd 验证失败，可能需要重启终端", Color.YELLOW)
+        Color.print("   [WARN] clangd 验证失败，可能需要重启终端", Color.YELLOW)
         if version_info:
             Color.print(f"   版本: {version_info}", Color.WHITE)
 
@@ -188,7 +188,7 @@ def step_configure_path(llvm_path: Optional[Path]) -> None:
     if llvm_path and is_windows():
         ClangdInstaller.add_to_path_windows(llvm_path)
     elif llvm_path:
-        Color.print("   ✓ LLVM 已在 PATH 中", Color.GREEN)
+        Color.print("   [OK] LLVM 已在 PATH 中", Color.GREEN)
     print()
 
 
@@ -248,14 +248,14 @@ def main() -> int:
     Color.print("╚══════════════════════════════════════════════════════════╝", Color.GREEN)
     print()
 
-    Color.print("📋 配置摘要:", Color.CYAN)
+    Color.print("配置摘要:", Color.CYAN)
     if llvm_path:
         Color.print(f"   Clangd 路径: {llvm_path}", Color.WHITE)
     if is_installed and version_info:
         Color.print(f"   Clangd 版本: {version_info}", Color.WHITE)
     print()
 
-    Color.print("✨ Clangd LSP 配置完成！", Color.GREEN)
+    Color.print("Clangd LSP 配置完成！", Color.GREEN)
     print()
 
     return 0

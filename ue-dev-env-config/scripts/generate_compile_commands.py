@@ -86,7 +86,7 @@ def generate_with_ubt(
                 data = json.load(f)
                 count = len(data)
 
-            Color.print(f"   ✓ UBT 生成成功: {count} 个条目", Color.GREEN)
+            Color.print(f"   [OK] UBT 生成成功: {count} 个条目", Color.GREEN)
             Color.print(f"     源文件: {generated_path.parent.name}/compile_commands.json", Color.GRAY)
             Color.print(f"     目标: {target_path}", Color.GRAY)
             return True
@@ -94,7 +94,7 @@ def generate_with_ubt(
             return False
 
     except Exception as e:
-        Color.print(f"   ✗ UBT 执行异常: {e}", Color.RED)
+        Color.print(f"   [ERROR] UBT 执行异常: {e}", Color.RED)
         return False
 
 
@@ -174,7 +174,7 @@ def generate_with_python(
         encoding='utf-8'
     )
 
-    Color.print(f"   ✓ Python 脚本生成成功: {len(commands)} 个条目", Color.GREEN)
+    Color.print(f"   [OK] Python 脚本生成成功: {len(commands)} 个条目", Color.GREEN)
     return True
 
 
@@ -197,7 +197,7 @@ def main():
 
         if not success:
             Color.print("", Color.RESET)
-            Color.print("   ℹ UBT 生成失败可能的原因:", Color.CYAN)
+            Color.print("   [INFO] UBT 生成失败可能的原因:", Color.CYAN)
             Color.print("     1. 项目尚未编译过（需要先在 UE 编辑器中编译至少一次）", Color.WHITE)
             Color.print("     2. 项目文件损坏或配置错误", Color.WHITE)
             Color.print("", Color.RESET)
@@ -209,7 +209,7 @@ def main():
         success = generate_with_python(workspace_root, engine_path)
 
     if not success:
-        Color.print("   ✗ 生成失败", Color.RED)
+        Color.print("   [ERROR] 生成失败", Color.RED)
         sys.exit(1)
 
     Color.print("")
