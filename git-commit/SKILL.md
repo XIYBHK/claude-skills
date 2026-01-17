@@ -1,6 +1,6 @@
 ---
 name: git-commit
-description: 自动生成符合 Conventional Commits 规范的 git 提交信息并执行提交。当用户需要创建符合项目规范的 git 提交时使用此 skill。支持自动分析修改文件、推断作用域、生成中文提交信息并执行 git add 和 commit 操作。
+description: 自动生成符合 Conventional Commits 规范的 git 提交信息并执行提交。当用户需要创建符合项目规范的 git 提交时使用此 Skill。支持自动分析修改文件、推断作用域、生成中文提交信息并执行 git add 和 commit 操作。
 ---
 
 # Git 提交器 Skill
@@ -9,7 +9,7 @@ description: 自动生成符合 Conventional Commits 规范的 git 提交信息�
 
 ## 使用场景
 
-在以下情况下使用此 skill：
+在以下情况下使用此 Skill：
 - 用户要求创建符合项目规范的 git 提交
 - 用户要求分析 git 状态并生成提交信息
 - 用户需要批量提交代码修改
@@ -52,7 +52,7 @@ description: 自动生成符合 Conventional Commits 规范的 git 提交信息�
 
 ### 步骤 1: 分析 Git 状态
 
-执行 `git status` 分析当前修改：
+执行 `git status` 分析待提交修改：
 ```bash
 git status
 ```

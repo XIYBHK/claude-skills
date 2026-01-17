@@ -1,6 +1,6 @@
 ---
 name: changelog-generator
-description: 自动管理更新日志：整理变更到 UNRELEASED.md，推送版本到 CHANGELOG.md 并更新版本号
+description: 自动管理更新日志：整理变更到 UNRELEASED.md，推送版本到 CHANGELOG.md 并更新版本号。当用户需要管理项目更新日志或发布版本时使用此 skill。
 ---
 
 # 更新日志生成器（两阶段式）
