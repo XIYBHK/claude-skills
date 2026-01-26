@@ -1,5 +1,5 @@
 ---
-name: git-commit
+name: git-commit 智能提交
 description: 自动生成符合 Conventional Commits 规范的 git 提交信息并执行提交。当用户需要创建符合项目规范的 git 提交时使用此 Skill。支持自动分析修改文件、推断作用域、生成中文提交信息并执行 git add 和 commit 操作。
 ---
 

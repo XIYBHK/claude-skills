@@ -1,5 +1,5 @@
 ---
-name: skill-creator
+name: skill-creator Skill创建器
 description: 创建有效 skills 的指南。当用户想要创建新 skill（或更新现有 skill）以通过专业知识、工作流程或工具集成来扩展 Claude 的能力时，应使用此 skill。
 license: Complete terms in LICENSE.txt
 ---
@@ -168,6 +168,51 @@ scripts/init_skill.py <skill-name> --path <output-directory>
 1. skill 的目的是什么，用几句话说明？
 2. 何时应使用该 skill？
 3. 在实践中，Claude 应该如何使用该 skill？应引用上面开发的所有可重用 skill 内容，以便 Claude 知道如何使用它们。
+
+#### 添加中文翻译
+
+为技能添加中文翻译可以提升中文用户的使用体验。在 YAML frontmatter 中为 `name` 和 `description` 字段添加中文翻译：
+
+**name 字段格式：**
+```yaml
+name: 英文名 中文说明（4-6字）
+```
+
+**示例：**
+- `name: changelog-generator 更新日志管理`
+- `name: git-commit 智能提交`
+- `name: ue-code-simplifier UE代码优化`
+
+**description 字段要求：**
+- 完整翻译成中文，写详细一点
+- 保留原有英文名
+- 说明何时应使用此 skill
+- 包含关键功能和使用场景
+
+**示例：**
+```yaml
+# 英文版
+name: web-artifacts-builder
+description: Suite of tools for creating elaborate, multi-component claude.ai HTML artifacts using modern frontend web technologies.
+
+# 中文版
+name: web-artifacts-builder Web构建器
+description: 用于创建复杂的、多组件的 claude.ai HTML 构件的工具套件，使用现代前端 Web 技术（React、Tailwind CSS、shadcn/ui）。适用于需要状态管理、路由或 shadcn/ui 组件的复杂构件，不适合简单的单文件 HTML/JSX 构件。
+```
+
+**批量翻译现有 Skills：**
+
+如果需要为多个现有 skills 添加中文翻译，按以下流程操作：
+
+1. 扫描 `~/.claude/skills/` 目录下的所有 Skill
+2. 读取每个 Skill 的 SKILL.md 文件
+3. 检查 name 和 description 字段是否已有中文翻译
+4. 如果没有，根据 Skill 的英文名和 description，添加中文翻译
+5. 格式要求：
+   - name: 英文名 中文说明（4-6字）
+   - description: 完整的中文描述
+6. 保留原有英文名，只在后面添加中文
+7. 不要修改其他字段
 
 ### 步骤 4.5：最佳实践检查
 
