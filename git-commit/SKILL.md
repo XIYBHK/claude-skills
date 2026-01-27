@@ -185,10 +185,6 @@ EOF
 - 新增行数: +Y 行
 - 删除行数: -Z 行
 
-💡 提示：可以使用 GitHub CLI 提升效率
-  - 推送到远程: git push
-  - 快速创建 PR: gh pr create --fill
-  - 查看状态: gh pr checks
 ```
 
 ---
@@ -243,10 +239,6 @@ EOF
 commit <hash>
 <type>(<scope>): <short_desc>
 
-💡 提示：可以使用 GitHub CLI 提升效率
-  - 快速创建 PR: gh pr create --fill
-  - 查看状态: gh pr checks
-  - 更多命令: 见 references/github-cli-guide.md
 ```
 
 ### 分批提交输出
@@ -268,10 +260,6 @@ commit <hash>
 - 新增行数: +Y 行
 - 删除行数: -Z 行
 
-💡 提示：
-  - 推送到远程: git push
-  - 快速创建 PR: gh pr create --fill
-  - 查看状态: gh pr checks
 ```
 
 ## 最佳实践提醒
