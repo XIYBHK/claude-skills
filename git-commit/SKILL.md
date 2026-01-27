@@ -36,6 +36,9 @@ description: 自动生成符合 Conventional Commits 规范的 git 提交信息�
 | `style` | 代码风格（不影响功能） | style: 统一代码缩进 |
 | `perf` | 性能优化 | perf(Sort): 优化排序算法性能 |
 | `test` | 测试相关 | test: 添加单元测试 |
+| `ci` | CI/CD 配置 | ci: 优化 GitHub Actions 工作流 |
+| `build` | 构建系统 | build: 更新构建脚本 |
+| `revert` | 回滚提交 | revert: 回滚 commit abc123 |
 
 ### 作用域 (scope)
 
@@ -45,8 +48,28 @@ description: 自动生成符合 Conventional Commits 规范的 git 提交信息�
 
 ### 描述规范
 
-- **简短描述**: 中文，不超过 50 字
+- **简短描述**: 中文，不超过 50 字，使用祈使语气（"添加"而不是"添加了"）
 - **详细描述**（可选）: 列表格式，每个条目以 `- 模块名: 说明` 开头
+
+### 提交拆分策略
+
+检测到以下情况时应建议用户拆分提交：
+- **混合类型**: 新功能 + Bug 修复在同一提交中
+- **多个关注点**: 不相关的变更（如文档 + 代码修复）
+- **跨多个模块**: 涉及超过 3 个不同模块的复杂变更
+
+**询问用户**: "检测到多种类型的变更，是否拆分为多个提交？"
+
+### 脚注规范（可选）
+
+对于重要变更，可以在详细描述后添加脚注：
+
+```
+BREAKING CHANGE: API 接口变更说明
+Closes: #123, #124
+Refs: issue/456
+Co-authored-by: 张三 <zhangsan@example.com>
+```
 
 ## 工作流程
 
@@ -59,21 +82,27 @@ git status
 
 识别修改的文件并推断建议的 **scope**。
 
+**检测提交拆分需求**:
+- 分析变更的文件类型和模块
+- 如果检测到多种不相关的变更，询问用户是否拆分
+
 ### 步骤 2: 收集提交信息
 
 从用户获取以下信息：
 - **type**: 提交类型
 - **scope**: 作用域（可基于步骤 1 自动推断）
-- **short_desc**: 简短描述（中文）
+- **short_desc**: 简短描述（中文，祈使语气）
 - **details**: 详细描述（可选）
+- **footer**: 脚注（可选，如 BREAKING CHANGE、Closes 等）
 
 ### 步骤 3: 生成提交信息
 
 根据收集的信息生成符合规范的提交信息。
 
 **格式化规则**:
-- 如果有 **details**，使用多行格式
+- 如果有 **details** 或 **footer**，使用多行格式
 - 每个详细条目格式: `- 模块名: 说明`
+- 脚注格式: `BREAKING CHANGE:`、`Closes:`、`Refs:` 等
 
 ### 步骤 4: 执行提交
 
@@ -94,10 +123,6 @@ EOF
 - **Windows (PowerShell)**: 使用上述 HEREDOC 格式
 - **Linux/Mac (bash)**: 同样使用 HEREDOC 格式
 
-## 参考资源
-
-查看 `references/commit-examples.md` 了解项目的实际提交示例。
-
 ## 输出格式
 
 提交完成后，显示：
@@ -106,4 +131,22 @@ EOF
 
 commit <hash>
 <type>(<scope>): <short_desc>
+
+💡 提示：可以使用 GitHub CLI 提升效率
+  - 快速创建 PR: gh pr create --fill
+  - 查看状态: gh pr checks
+  - 更多命令: 见 references/github-cli-guide.md
 ```
+
+## 最佳实践提醒
+
+在执行过程中，主动提醒用户：
+1. **检查变更范围**: 是否包含不相关的改动需要拆分
+2. **使用祈使语气**: "添加功能"而不是"添加了功能"
+3. **引用问题**: 如果修复了 issue，在脚注中添加 `Closes: #123`
+4. **破坏性变更**: 使用 `BREAKING CHANGE:` 标注
+
+## 参考资源
+
+- `references/commit-examples.md` - 项目的实际提交示例
+- `references/github-cli-guide.md` - GitHub CLI 完整使用指南
