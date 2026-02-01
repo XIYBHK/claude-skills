@@ -208,7 +208,11 @@ XTools 是一个为 Unreal Engine 5.3-5.7 设计的模块化插件系统（v1.9.
 
 ### 提交信息格式
 ```
-docs: 更新 CHANGELOG.md v{版本号}
+chore: 发布版本 v{版本号}
+
+- 更新 CHANGELOG.md 添加 v{版本号} 版本说明
+- 更新版本号 {旧版本} → {新版本}（所有定义版本号的文件）
+- 清空 UNRELEASED.md 待发布内容
 ```
 
 ### 提交文件（⚠️ 必须全部提交）
@@ -222,18 +226,43 @@ docs: 更新 CHANGELOG.md v{版本号}
 ### 完整命令示例
 ```bash
 # 1. 添加修改的文件
-git add "Docs/版本变更/CHANGELOG.md" \
-        "Docs/版本变更/UNRELEASED.md" \
-        "Source/XToolsCore/Public/XToolsDefines.h" \
-        "XTools.uplugin" \
-        "README.md" \
-        "CLAUDE.md"
+git add -A
 
 # 2. 创建提交
-git commit -m "docs: 更新 CHANGELOG.md v1.9.5"
+git commit -m "chore: 发布版本 v1.9.5"
 
-# 3. 推送到远程仓库
-git push origin main
+# 3. 创建并推送 annotated tag（⚠️ CI/CD 触发必需）
+git tag -a v1.9.5 -m "Release version 1.9.5"
+git push origin v1.9.5
+
+# 4. 推送 commits 到远程仓库
+git push
+```
+
+### Tag 推送的重要性
+**⚠️ CI/CD 工作流通常由 tag 触发**，必须创建并推送 tag：
+
+```bash
+# 正确的 tag 创建方式（annotated tag）
+git tag -a v1.9.5 -m "Release version 1.9.5"
+
+# 推送 tag 到远程仓库
+git push origin v1.9.5
+
+# 推送所有 tags（如果需要）
+git push origin --tags
+```
+
+**验证 tag 是否推送成功**：
+```bash
+# 列出本地 tags
+git tag -l
+
+# 列出远程 tags
+git ls-remote --tags origin
+
+# 查看 tag 详情
+git show v1.9.5
 ```
 
 ---
@@ -282,18 +311,21 @@ git diff --name-only
 - ✅ CLAUDE.md: 描述版本 v1.9.4 → v1.9.5
 
 提交并推送：
-- 提交信息：docs: 更新 CHANGELOG.md v1.9.5
-- 推送到 origin/main
+- 提交信息：chore: 发布版本 v1.9.5
+- 创建并推送 tag: v1.9.5
+- 推送 commits 和 tags 到 origin/main
 
 已成功：
 - ✅ 更新 CHANGELOG.md
 - ✅ 清空 UNRELEASED.md
 - ✅ 更新版本号至 v1.9.5
   - XToolsDefines.h: PATCH = 5
-  - XTools.uplugin: Version = 2, VersionName = "1.9.5"
+  - XTools.uplugin: VersionName = "1.9.5"
   - README.md: 版本徽章 = "1.9.5"
   - CLAUDE.md: 描述版本 = v1.9.5
+- ✅ 创建 annotated tag: v1.9.5
 - ✅ 提交并推送到远程仓库
+- ✅ CI/CD 工作流已触发（由 tag v1.9.5 触发）
 ```
 
 ---
@@ -314,7 +346,7 @@ git diff --name-only
 
 ## 错误处理示例
 
-### UNRELEASED.md 为空
+### UNRELEASED.md 为空或无内容
 ```
 错误：UNRELEASED.md 中没有待发布内容
 解决：请先运行"整理更新"或手动添加变更记录
@@ -327,9 +359,31 @@ git diff --name-only
 示例：推送版本 v1.9.5
 ```
 
+### Tag 已存在
+```
+错误：Tag v1.9.5 已存在
+解决：请检查现有 tag，或使用不同的版本号
+命令：git tag -l | grep "1.9.5"
+```
+
+### Tag 推送失败
+```
+错误：Tag 推送失败 - 远程已有更新的 tag
+解决：先拉取远程 tags（git fetch --tags），检查冲突后重试
+```
+
 ### Git 提交失败
 ```
 错误：Git 提交失败 - 远程分支有新提交
 解决：请先拉取远程更新，解决冲突后重试
 回滚：已恢复文件到修改前状态
+```
+
+### CI/CD 未触发
+```
+错误：Tag 已推送但 CI 工作流未触发
+检查清单：
+1. Tag 是否为 annotated tag？（git tag -l --format='%(contents:subject)' v1.9.5）
+2. Tag 是否成功推送到远程？（git ls-remote --tags origin | grep v1.9.5）
+3. CI 配置的触发条件是否匹配 tag 名称？
 ```
