@@ -77,14 +77,93 @@ Co-authored-by: 张三 <zhangsan@example.com>
 
 ## 工作流程
 
+### 步骤 0: 检查远程同步状态（方案 A）
+
+在分析本地状态前，先检查远程仓库是否有新提交：
+
+```bash
+# 获取远程信息（不修改本地）
+git fetch origin
+
+# 比较本地和远程 HEAD
+LOCAL=$(git rev-parse HEAD)
+REMOTE=$(git rev-parse @{u})
+BASE=$(git merge-base HEAD @{u})
+
+if [ "$LOCAL" != "$REMOTE" ]; then
+  # 有差异，需要判断
+  if [ "$LOCAL" == "$BASE" ]; then
+    # 本地落后于远程
+    BEHIND=$(git rev-list --count HEAD..@{u})
+    echo "警告: 本地落后远程 $BEHIND 个提交"
+  elif [ "$REMOTE" == "$BASE" ]; then
+    # 本地领先于远程（正常情况）
+    echo "本地领先远程 $(git rev-list --count @{u}..HEAD) 个提交"
+  else
+    # 分叉情况
+    echo "警告: 本地和远程已分叉！"
+  fi
+fi
+```
+
+**检查输出示例**:
+```bash
+# 显示远程新增的提交
+git log HEAD..@{u} --oneline
+
+# 检查是否是 CI 自动提交
+if git log HEAD..@{u} --grep="auto-fix\|build(deps)\|dependabot" --oneline; then
+  echo "⚠️  检测到 CI 自动提交，建议先拉取"
+fi
+```
+
+**询问用户决策**:
+```
+检测到远程有 N 个新提交（可能是 CI 自动提交或 Dependabot 更新）
+
+最近的远程提交：
+  abc1234 style: auto-fix formatting
+  def5678 build(deps): update dependency
+
+操作选择：
+  [1] 先执行 git pull --rebase（推荐）
+  [2] 跳过检查，直接提交
+  [3] 取消操作，手动处理
+```
+
+**如果用户选择先拉取**:
+```bash
+git pull --rebase origin $(git branch --show-current)
+# 检查是否成功
+if [ $? -eq 0 ]; then
+  echo "✅ 已同步远程最新提交"
+  # 继续步骤 1
+else
+  echo "❌ 拉取失败，可能有冲突，请手动处理"
+  return
+fi
+```
+
+**如果用户选择跳过**:
+- 继续执行步骤 1
+- 提示用户可能需要在 push 时处理冲突
+
+---
+
 ### 步骤 1: 分析 Git 状态
 
 执行 `git status` 和 `git diff` 分析待提交修改：
 ```bash
 git status
-git diff
+git diff --stat           # 查看变更统计
+git diff <具体文件>       # 查看每个文件的实际变更内容
 git diff --staged
 ```
+
+**关键步骤：完整性检查**
+- **必须查看每个修改文件的实际 diff 内容**，不要仅凭文件名判断
+- **识别功能关联性**：相关文件应归为同一批次
+- **排除临时文件**：`*.pdb`, `*_test.rs`, `*.log` 等调试/测试文件
 
 识别修改的文件并推断建议的 **scope**。
 
@@ -153,7 +232,14 @@ git diff --staged
 # 1. 添加该批次的文件
 git add <批次文件列表>
 
-# 2. 自动生成并执行提交
+# 2. 【关键】验证暂存区完整性
+git diff --cached --stat        # 检查文件数量
+git diff --cached                # 检查变更内容是否完整
+
+# 3. 如果发现遗漏，补充添加
+git add <遗漏的文件>
+
+# 4. 自动生成并执行提交
 git commit -m "$(cat <<'EOF'
 <type>(<scope>): <short_desc>
 
@@ -167,6 +253,20 @@ EOF
 - **scope**: 根据文件路径自动推断模块名
 - **short_desc**: 简洁描述变更内容，使用祈使语气
 - **details**: 列出主要变更点，每条以 `- 模块名: 说明` 开头
+
+**如果发现遗漏**（在提交后发现）:
+```bash
+# 方法 1: 补充提交（推荐）
+git add <遗漏的文件>
+git commit -m "$(cat <<'EOF'
+fix(scope): 补充提交 - 说明遗漏的内容
+EOF
+)"
+
+# 方法 2: 修改上一个提交（仅限未推送）
+git add <遗漏的文件>
+git commit --amend --no-edit
+```
 
 ### 步骤 2A-4: 显示执行结果
 
@@ -262,6 +362,57 @@ commit <hash>
 
 ```
 
+## 常见遗漏点
+
+在分批提交时，以下文件容易被遗漏，需要特别检查：
+
+### 功能关联性检查清单
+
+| 功能模块 | 容易遗漏的文件 | 检查方法 |
+|---------|--------------|---------|
+| **新增 Tauri 命令** | `main.rs`（命令注册） | 查找 `invoke_handler` 中的新增命令 |
+| **修改 Rust 结构体** | `mod.rs`（模块导出） | 检查是否需要 `pub use` |
+| **修改前端类型** | 同名 `.test.ts` / `.spec.ts` | 查找测试文件 |
+| **修改 API 接口** | API 文档、类型定义 | 检查 docs/ 和 types/ 目录 |
+| **修改配置** | 配置文件的示例文件 | 如 `config.example.json` |
+
+### 防遗漏检查流程
+
+```bash
+# 1. 提交前验证暂存区
+git diff --cached --name-only    # 列出暂存的文件
+git diff --cached                # 查看暂存的变更内容
+
+# 2. 检查是否有相关文件未添加
+git status                       # 查看未暂存的修改
+
+# 3. 使用 grep 搜索相关文件
+# 例如：新增了 translator.rs 中的命令，检查 main.rs
+git diff src-tauri/src/main.rs | grep -i "cancel"
+
+# 4. 提交后再次检查
+git status                       # 确认工作区干净
+```
+
+### 典型遗漏案例
+
+**案例 1**: 新增翻译任务取消功能
+- ✅ 已提交: `translation_task.rs`, `translator.rs`
+- ❌ 遗漏: `main.rs`（注册 `cancel_translation` 命令）
+- **原因**: 未查看 `main.rs` 的实际 diff 内容
+
+**案例 2**: 修改 Rust 结构体字段
+- ✅ 已提交: `services/config.rs`
+- ❌ 遗漏: `commands/config_cmd.rs`（使用该结构体）
+- **原因**: 未检查结构体的使用位置
+
+**案例 3**: 更新前端类型定义
+- ✅ 已提交: `types/api.ts`
+- ❌ 遗漏: `types/api.test.ts`
+- **原因**: 未搜索同名测试文件
+
+---
+
 ## 最佳实践提醒
 
 在执行过程中，主动提醒用户：
@@ -274,6 +425,45 @@ commit <hash>
 3. **使用祈使语气**: "添加功能"而不是"添加了功能"
 4. **引用问题**: 如果修复了 issue，在脚注中添加 `Closes: #123`
 5. **破坏性变更**: 使用 `BREAKING CHANGE:` 标注
+
+### CI 自动提交场景（重要）
+
+当项目使用 CI 自动格式化或 Dependabot 时：
+
+**典型场景**:
+- 每次 push 触发 CI 自动格式化（Prettier/cargo fmt）
+- Dependabot 自动更新依赖
+- 多设备/多人协作
+
+**风险提示**:
+```
+时间线示例：
+  T1: 本地开发基于 commit A
+  T2: 本地 push → CI 自动格式化 → 创建 commit B
+  T3: 本地继续开发（仍基于 A）
+  T4: 尝试 push → ❌ rejected! 需要先拉取 B
+```
+
+**推荐工作流**:
+```bash
+# 提交前检查
+git fetch origin
+git log HEAD..@{u} --oneline  # 查看远程新提交
+
+# 如果有 CI 提交，先拉取
+git pull --rebase
+
+# 然后正常提交和推送
+git add .
+git commit -m "..."
+git push
+```
+
+**检测 CI 提交的命令**:
+```bash
+# 检测常见的 CI 提交模式
+git log HEAD..@{u} --grep="auto-fix\|build(deps)\|dependabot\|style:" --oneline
+```
 
 ## 参考资源
 
