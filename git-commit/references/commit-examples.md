@@ -1,6 +1,6 @@
 # Git 提交示例
 
-本文档包含项目的实际提交示例，作为生成提交信息的参考。
+本文档包含提交信息格式示例，作为生成提交信息的参考。scope 应根据实际项目模块名称填写。
 
 ## 提交格式
 
@@ -10,99 +10,80 @@
 <详细描述（可选）>
 ```
 
-## 实际示例
+## 格式示例
 
 ### 重构类 (refactor)
 
 ```
-refactor(XToolsCore,XTools,Sort,GeometryTool): 代码审查修复 - 原子操作安全/数组越界/版本兼容
+refactor(Core,Utils,Sort,Geometry): 代码审查修复 - 原子操作安全/数组越界/版本兼容
 
-- XToolsCore: 修复原子操作使用 FPlatformAtomics 替代非原子实现
-- XTools: 修复 DrawBezierDebug 数组越界风险并移除重复定义
-- Sort: 使用 XTOOLS_GET_ELEMENT_SIZE 宏适配 UE 5.5+
-- GeometryTool: 移除未使用的 XToolsErrorReporter.h 头文件
-```
-
-```
-refactor(ObjectPool,BlueprintExtensions): 新增对象池统计命令并优化K2Node代码
+- Core: 修复原子操作使用平台API替代非原子实现
+- Utils: 修复数组越界风险并移除重复定义
+- Sort: 使用新宏适配版本兼容
+- Geometry: 移除未使用的头文件
 ```
 
 ```
-refactor(PointSampling): 优化代码结构并增强纹理采样功能
+refactor(ObjectPool,Blueprint): 新增对象池统计命令并优化节点代码
+```
+
+```
+refactor(Sampling): 优化代码结构并增强纹理采样功能
 ```
 
 ### 修复类 (fix)
 
 ```
-fix(PointSampling): 修复 CI 编译错误
+fix(Sampling): 修复 CI 编译错误
 ```
 
 ```
-fix(PointSampling): 修复泊松采样网格索引Bug并添加内存预分配
+fix(Sampling): 修复网格索引Bug并添加内存预分配
 ```
 
 ```
-fix(GeometryTool): 移除 Kismet 模块依赖，修复 CI 构建失败
+fix(Geometry): 移除模块依赖，修复 CI 构建失败
 ```
 
 ### 新功能类 (feat)
 
 ```
-feat(GeometryTool): 新增基于形状组件的点阵生成功能，支持 Box/Sphere 形状和随机变换参数
+feat(Geometry): 新增基于形状组件的点阵生成功能，支持 Box/Sphere 形状和随机变换参数
 ```
 
 ```
-feat(ObjectPool,BlueprintExtensions): 新增对象池统计命令并优化K2Node代码
+feat(ObjectPool,Blueprint): 新增对象池统计命令并优化节点代码
 ```
 
 ### 文档类 (docs)
 
 ```
-docs: CHANGELOG.md 移除emoji并统一折叠栏格式
+docs: 更新 CHANGELOG.md 格式
 ```
 
 ```
-docs: 合并 UNRELEASED.md 到 CHANGELOG.md v1.9.4
+docs: 合并更新日志到 v1.9.4
 ```
 
 ```
-docs(ci): 同步 CI 工作流配置更新到 UNRELEASED.md
+docs(ci): 同步 CI 工作流配置更新
 ```
 
 ### 工具类 (chore)
 
 ```
-chore: 将 GitHub Actions 工作流的 powershell 替换为 pwsh
+chore: 将 CI 工作流的 powershell 替换为 pwsh
 ```
 
-## 模块名称参考
+## Scope 命名建议
 
-### 核心模块
-- XToolsCore
-- XTools
+根据项目实际情况，scope 通常使用以下方式命名：
 
-### 功能模块
-- Sort
-- SortEditor
-- RandomShuffles
-- PointSampling
-- FormationSystem
-- ObjectPool
-- ObjectPoolEditor
-- FieldSystemExtensions
-- GeometryTool
+| 项目类型 | Scope 示例 |
+|---------|-----------|
+| 前端项目 | `components`, `hooks`, `utils`, `api`, `styles` |
+| 后端项目 | `auth`, `database`, `api`, `middleware`, `config` |
+| 游戏引擎 | `Core`, `Editor`, `Runtime`, `Blueprint`, `UI` |
+| 通用库 | `core`, `utils`, `types`, `helpers` |
 
-### 编辑器模块
-- BlueprintExtensions
-- BlueprintExtensionsRuntime
-- X_AssetEditor
-- XTools_ComponentTimelineRuntime
-- XTools_ComponentTimelineUncooked
-
-### 第三方集成（不直接修改）
-- XTools_EnhancedCodeFlow
-- XTools_AutoSizeComments
-- XTools_BlueprintAssist
-- XTools_ElectronicNodes
-- XTools_BlueprintScreenshotTool
-- XTools_SwitchLanguage
+**原则**: scope 应简洁、能表达变更所属模块，多个模块用逗号分隔。
