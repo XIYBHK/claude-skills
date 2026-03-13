@@ -1,0 +1,42 @@
+{
+  "skill_name": "git-commit 智能提交",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我把 git-commit 这个 skill 的文案改了一遍，顺手删了一个已经没用的参考文件。帮我分析这些改动并直接提交。",
+      "expected_output": "技能应先检查 git 状态和 diff，总结这是一组围绕 git-commit skill 本身的相关改动，生成合适的中文 Conventional Commit 提交信息，并在用户明确要求下执行提交。",
+      "files": [],
+      "expectations": [
+        "会先审查 git 状态、diff 和最近提交风格，而不是直接提交",
+        "提交信息使用 Conventional Commits 格式且为中文",
+        "能把本次改动识别为围绕 git-commit skill 的同一主题提交",
+        "在评测环境中不会真实执行 git add、git commit 或 push"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "先别真的提交。我这次改了 README 和 CI 配置，想要一个规范一点的 commit message，你帮我给几个候选。",
+      "expected_output": "技能应只给出 type、scope 和候选提交信息，不执行 git add 或 git commit。",
+      "files": [],
+      "expectations": [
+        "识别用户只想要提交信息建议，不执行实际提交",
+        "严格提供 1 到 3 个候选提交信息，不额外追加第 4 个备选 message",
+        "如果改动可能混杂，会指出是否建议拆分",
+        "在评测环境中不会真实执行 git add、git commit 或 push"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "我这边有一部分是修复登录跳转 bug，另一部分是补了一堆文档。你先看看应不应该分成两个 commit，再帮我处理。",
+      "expected_output": "技能应识别出 bug 修复与文档更新是两个关注点，优先建议拆分提交，并给出分批计划。",
+      "files": [],
+      "expectations": [
+        "能识别 fix 和 docs 混在一起时应建议拆分提交",
+        "会先给出拆分计划而不是直接把所有改动合成一个提交",
+        "拆分建议包含每个批次大致的 type 或提交方向，并解释拆分依据",
+        "如果工作区没有真实 diff，会如实说明限制而不是臆造文件级分组",
+        "在评测环境中不会真实执行 git add、git commit 或 push"
+      ]
+    }
+  ]
+}
