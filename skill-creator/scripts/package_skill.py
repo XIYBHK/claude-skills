@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Skill Packager - Creates a distributable zip file of a skill folder
+Skill Packager - Creates a distributable .skill file of a skill folder
 
 Usage:
     python utils/package_skill.py <path/to/skill-folder> [output-directory]
@@ -11,53 +10,45 @@ Example:
     python utils/package_skill.py skills/public/my-skill ./dist
 """
 
+import fnmatch
 import sys
-import io
 import zipfile
 from pathlib import Path
-from quick_validate import validate_skill
+from scripts.quick_validate import validate_skill
+
+# Patterns to exclude when packaging skills.
+EXCLUDE_DIRS = {"__pycache__", "node_modules"}
+EXCLUDE_GLOBS = {"*.pyc"}
+EXCLUDE_FILES = {".DS_Store"}
+# Directories excluded only at the skill root (not when nested deeper).
+ROOT_EXCLUDE_DIRS = {"evals"}
 
 
-def should_exclude(file_path):
-    """
-    Check if a file or directory should be excluded from the package.
-    
-    Args:
-        file_path: Path object to check
-        
-    Returns:
-        True if the file should be excluded, False otherwise
-    """
-    # Exclude __pycache__ directories
-    if '__pycache__' in file_path.parts:
+def should_exclude(rel_path: Path) -> bool:
+    """Check if a path should be excluded from packaging."""
+    parts = rel_path.parts
+    if any(part in EXCLUDE_DIRS for part in parts):
         return True
-    
-    # Exclude common Python cache files
-    if file_path.suffix in ['.pyc', '.pyo', '.pyd']:
+    # rel_path is relative to skill_path.parent, so parts[0] is the skill
+    # folder name and parts[1] (if present) is the first subdir.
+    if len(parts) > 1 and parts[1] in ROOT_EXCLUDE_DIRS:
         return True
-    
-    # Exclude .DS_Store files (macOS)
-    if file_path.name == '.DS_Store':
+    name = rel_path.name
+    if name in EXCLUDE_FILES:
         return True
-    
-    return False
-
-# 配置 UTF-8 输出（修复 Windows 编码问题）
-if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+    return any(fnmatch.fnmatch(name, pat) for pat in EXCLUDE_GLOBS)
 
 
 def package_skill(skill_path, output_dir=None):
     """
-    Package a skill folder into a zip file.
+    Package a skill folder into a .skill file.
 
     Args:
         skill_path: Path to the skill folder
-        output_dir: Optional output directory for the zip file (defaults to current directory)
+        output_dir: Optional output directory for the .skill file (defaults to current directory)
 
     Returns:
-        Path to the created zip file, or None if error
+        Path to the created .skill file, or None if error
     """
     skill_path = Path(skill_path).resolve()
 
@@ -93,28 +84,27 @@ def package_skill(skill_path, output_dir=None):
     else:
         output_path = Path.cwd()
 
-    zip_filename = output_path / f"{skill_name}.zip"
+    skill_filename = output_path / f"{skill_name}.skill"
 
-    # Create the zip file
+    # Create the .skill file (zip format)
     try:
-        with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            # Walk through the skill directory
+        with zipfile.ZipFile(skill_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            # Walk through the skill directory, excluding build artifacts
             for file_path in skill_path.rglob('*'):
-                # Skip excluded files and directories
-                if should_exclude(file_path):
+                if not file_path.is_file():
                     continue
-                    
-                if file_path.is_file():
-                    # Calculate the relative path within the zip
-                    arcname = file_path.relative_to(skill_path.parent)
-                    zipf.write(file_path, arcname)
-                    print(f"  Added: {arcname}")
+                arcname = file_path.relative_to(skill_path.parent)
+                if should_exclude(arcname):
+                    print(f"  Skipped: {arcname}")
+                    continue
+                zipf.write(file_path, arcname)
+                print(f"  Added: {arcname}")
 
-        print(f"\n✅ Successfully packaged skill to: {zip_filename}")
-        return zip_filename
+        print(f"\n✅ Successfully packaged skill to: {skill_filename}")
+        return skill_filename
 
     except Exception as e:
-        print(f"❌ Error creating zip file: {e}")
+        print(f"❌ Error creating .skill file: {e}")
         return None
 
 
