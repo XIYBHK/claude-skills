@@ -35,3 +35,7 @@ desktop.ini
 # Claude
 nul
 *.zip
+/find-skills
+/vercel-composition-patterns
+/vercel-react-best-practices
+/web-design-guidelines
