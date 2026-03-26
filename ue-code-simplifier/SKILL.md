@@ -1,6 +1,7 @@
 ---
 name: ue-code-simplifier UE代码优化
-description: 简化和优化 UE C++ 插件代码，遵循 Epic Games 编码标准和项目约定。当用户需要优化、重构或审查 Unreal Engine C++ 插件代码时使用此 skill。专注于提升代码清晰度、安全性、性能和可维护性，同时保持功能不变。
+description: |
+  简化和优化 UE C++ 插件代码，遵循 Epic Games 编码标准和项目约定。当用户需要优化、重构或审查 Unreal Engine C++ 插件代码时使用此 skill。也适用于：审查 UE 代码质量、清理 C++ 插件冗余代码、优化 Unreal 性能、检查 Epic 命名规范、修复编译警告、提交前代码审查。当用户在 .h/.cpp 文件中提到"简化""优化""重构""审查""清理"等意图，且上下文涉及 Unreal Engine 时，应触发此 skill。
 model: opus
 ---
 
