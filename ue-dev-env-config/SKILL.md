@@ -1,7 +1,6 @@
 ---
-name: ue-dev-env-config UE环境配置
-description: |
-  配置 Unreal Engine 开发环境的 VSCode 设置，包括 IntelliSense、编译任务、调试配置和扩展推荐。当需要在 VSCode 中开发 UE C++ 插件或项目时使用此 skill。也适用于：配置 UE 工作区、设置 C++ 智能提示、UE 编译调试配置、生成 c_cpp_properties.json、配置 UE launch.json、设置 clangd LSP、OpenCode 配置。当用户提到"配置 UE 环境""VSCode 找不到 UE 头文件""IntelliSense 不工作""编译任务配置"等场景时应触发。
+name: ue-dev-env-config
+description: 配置 Unreal Engine 开发环境的 VSCode 设置，包括 IntelliSense、编译任务、调试配置和扩展推荐。当需要在 VSCode 中开发 UE C++ 插件或项目时使用此 skill。自动检测 UE 引擎和 Visual Studio，支持插件和项目工作区。
 allowed-tools: Bash, Read, Write, Glob
 ---
 
