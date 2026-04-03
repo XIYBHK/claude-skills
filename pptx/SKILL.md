@@ -1,6 +1,6 @@
 ---
-name: pptx PPT演示
-description: 处理 .pptx 文件的全方位工具。包括创建幻灯片、演示文稿、读取或提取 .pptx 文件内容、编辑或更新现有演示文稿、合并或拆分幻灯片文件、处理模板、布局、演讲者备注或批注。当用户提到"幻灯片"、"演示文稿"或引用 .pptx 文件名时使用此 skill。
+name: pptx
+description: "Use this skill any time a .pptx file is involved in any way — as input, output, or both. This includes: creating slide decks, pitch decks, or presentations; reading, parsing, or extracting text from any .pptx file (even if the extracted content will be used elsewhere, like in an email or summary); editing, modifying, or updating existing presentations; combining or splitting slide files; working with templates, layouts, speaker notes, or comments. Trigger whenever the user mentions \"deck,\" \"slides,\" \"presentation,\" or references a .pptx filename, regardless of what they plan to do with the content afterward. If a .pptx file needs to be opened, created, or touched, use this skill."
 license: Proprietary. LICENSE.txt has complete terms
 ---
 
