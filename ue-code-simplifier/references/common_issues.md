@@ -1,5 +1,20 @@
 # 常见问题和解决方案
 
+## 目录
+
+- [编译警告](#编译警告) — C5038 初始化顺序, C2440 类型转换
+- [头文件问题](#头文件问题) — TUniquePtr 完整定义, .generated.h 顺序
+- [反射系统](#反射系统) — UFUNCTION 委托, GENERATED_BODY 位置
+- [性能问题](#性能问题) — Tick 昂贵操作, 不必要的分配
+- [线程安全](#线程安全) — 双重锁定
+- [内存泄漏](#内存泄漏) — UObject 循环引用, 非 UObject 内存
+- [蓝图问题](#蓝图问题) — 元数据不完整, Category 格式
+- [TArray 类型不兼容](#tarray-类型不兼容) — TInlineAllocator, SetNumZeroed, 成员遮蔽
+- [空间数据结构](#空间数据结构) — TMap 不适合空间网格
+- [调试技巧](#调试技巧) — 条件编译, 崩溃追踪
+
+---
+
 ## 编译警告
 
 ### C5038: 初始化列表顺序
@@ -290,7 +305,7 @@ UFUNCTION(BlueprintCallable)
 static void MyFunction(FString Data);
 
 // 正确：完整的中文元数据
-UFUNCTION(BlueprintCallable, Category = "XTools|MyModule",
+UFUNCTION(BlueprintCallable, Category = "MyPlugin|MyModule",
     meta = (
         DisplayName = "我的函数",
         Keywords = "关键词",
@@ -305,13 +320,88 @@ static void MyFunction(
 ```cpp
 // 错误：格式不一致
 UFUNCTION(BlueprintCallable, Category = "MyFunction")  // 缺少模块前缀
-UFUNCTION(BlueprintCallable, Category = "XTools|MyFunction")  // 缺少子类别
+UFUNCTION(BlueprintCallable, Category = "MyPlugin|MyFunction")  // 缺少子类别
 
 // 正确：统一格式
-UFUNCTION(BlueprintCallable, Category = "XTools|MyModule|Subcategory")
+UFUNCTION(BlueprintCallable, Category = "MyPlugin|MyModule|Subcategory")
+```
+
+## TArray 类型不兼容
+
+### TInlineAllocator 与默认 Allocator 不互通
+
+```cpp
+// [BAD] 编译错误：类型不兼容
+TArray<int32, TInlineAllocator<64>> LocalBuffer;
+void QuerySphere(TArray<int32>& OutResult);  // 接受默认 allocator
+QuerySphere(LocalBuffer);  // C2664: 无法转换
+
+// [OK] 方案1：回退为默认 TArray + Reserve
+TArray<int32> LocalBuffer;
+LocalBuffer.Reserve(64);
+QuerySphere(LocalBuffer);
+
+// [OK] 方案2：模板化下游函数
+template<typename AllocType>
+void QuerySphere(TArray<int32, AllocType>& OutResult);
+```
+
+### SetNumZeroed vs SetNumUninitialized + Memzero
+
+```cpp
+// SetNumZeroed 只对新增元素清零，缩小时不清零
+// 对于需要每帧全清零的复用数组：
+Array.SetNumUninitialized(N);
+FMemory::Memzero(Array.GetData(), N * sizeof(T));
+
+// 或者使用 Reset + SetNumZeroed（如果不确定之前大小）
+Array.Reset();
+Array.SetNumZeroed(N);
+```
+
+### 成员数组遮蔽
+
+```cpp
+// [BAD] 局部变量遮蔽同名成员（C4458 警告）
+class FSystem {
+    TArray<float> CorrectionSums;  // 成员
+
+    void SolveObstacles() {
+        TArray<float> CorrectionSums;  // [BAD] 遮蔽成员！
+    }
+};
+
+// [OK] 局部变量用不同名称
+void SolveObstacles() {
+    TArray<float> ObstacleCorrectionSums;  // [OK] 不遮蔽
+}
+```
+
+## 空间数据结构
+
+### TMap 不适合空间网格
+
+```cpp
+// [BAD] Epic 从不在空间网格中使用 TMap
+TMap<FIntVector, TArray<int32>> GridCells;
+
+// [OK] 使用自定义空间 hash key
+struct FCellKey {
+    FIntVector Coord;
+    explicit FCellKey(const FIntVector& C) : Coord(C) {}
+    bool operator==(const FCellKey& O) const { return Coord == O.Coord; }
+    friend uint32 GetTypeHash(const FCellKey& K) {
+        return uint32(K.Coord.X) * 1150168907u
+             + uint32(K.Coord.Y) * 1235029793u
+             + uint32(K.Coord.Z) * 1282581571u;
+    }
+};
+TMap<FCellKey, TArray<int32>> GridCells;
 ```
 
 ## 调试技巧
+
+> Stats 系统（`stat game` 命令）与 Insights 追踪（`TRACE_CPUPROFILER_EVENT_SCOPE`）用途不同，详见 `performance_patterns.md#stats`
 
 ### 条件编译调试
 
