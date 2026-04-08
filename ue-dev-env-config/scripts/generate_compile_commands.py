@@ -19,9 +19,7 @@ setup_utf8_console()
 
 
 def generate_with_ubt(
-    project_path: Path,
-    engine_path: Path,
-    workspace_root: Path
+    project_path: Path, engine_path: Path, workspace_root: Path
 ) -> bool:
     """使用 UBT 生成 compile_commands.json"""
 
@@ -36,14 +34,14 @@ def generate_with_ubt(
     Color.print(f"   -> 尝试使用 UBT 生成...", Color.CYAN)
     Color.print(f"   项目: {project_name}", Color.GRAY)
 
-    # 构建 UBT 命令
+    # 构建 UBT 命令（list 形式传参，不嵌入引号，由 subprocess 处理）
     cmd_args = [
         str(ubt_path),
         f"{project_name}Editor",
         "Win64",
         "Development",
-        f"-Project=\"{project_path}\"",
-        "-Mode=GenerateClangDatabase"
+        f"-Project={project_path}",
+        "-Mode=GenerateClangDatabase",
     ]
 
     Color.print(f"   执行 UBT...", Color.GRAY)
@@ -55,9 +53,9 @@ def generate_with_ubt(
             capture_output=True,
             text=True,
             timeout=180,  # 3 分钟超时
-            encoding='utf-8',
-            errors='replace',
-            shell=is_windows()
+            encoding="utf-8",
+            errors="replace",
+            shell=False,
         )
 
         # UBT 可能在两个位置生成文件：
@@ -65,7 +63,7 @@ def generate_with_ubt(
         # 2. 项目目录: <project_parent>/compile_commands.json
         possible_paths = [
             engine_path / "compile_commands.json",
-            project_path.parent / "compile_commands.json"
+            project_path.parent / "compile_commands.json",
         ]
 
         generated_path = None
@@ -82,12 +80,15 @@ def generate_with_ubt(
             shutil.copy2(generated_path, target_path)
 
             # 统计条目数
-            with open(target_path, 'r', encoding='utf-8') as f:
+            with open(target_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 count = len(data)
 
             Color.print(f"   [OK] UBT 生成成功: {count} 个条目", Color.GREEN)
-            Color.print(f"     源文件: {generated_path.parent.name}/compile_commands.json", Color.GRAY)
+            Color.print(
+                f"     源文件: {generated_path.parent.name}/compile_commands.json",
+                Color.GRAY,
+            )
             Color.print(f"     目标: {target_path}", Color.GRAY)
             return True
         else:
@@ -98,10 +99,7 @@ def generate_with_ubt(
         return False
 
 
-def generate_with_python(
-    workspace_root: Path,
-    engine_path: Path
-) -> bool:
+def generate_with_python(workspace_root: Path, engine_path: Path) -> bool:
     """使用 Python 脚本生成 compile_commands.json（后备方案）"""
 
     Color.print(f"   -> 使用 Python 脚本生成（后备方案）...", Color.CYAN)
@@ -114,7 +112,7 @@ def generate_with_python(
         "Engine/Source/Runtime/Engine/Public",
         "Engine/Source/Runtime/ApplicationCore/Public",
         "Engine/Source/Developer",
-        "Engine/Source/Editor"
+        "Engine/Source/Editor",
     ]
 
     # 转换为绝对路径
@@ -122,7 +120,7 @@ def generate_with_python(
     for rel_path in ue_include_paths:
         abs_path = engine_path / rel_path
         if abs_path.exists():
-            include_args.append(f"-I\"{abs_path.as_posix()}\"")
+            include_args.append(f"-I{abs_path.as_posix()}")
 
     # UE 预定义宏
     ue_defines = [
@@ -131,7 +129,7 @@ def generate_with_python(
         "-DUNREAL_BUILD=1",
         "-D_MSC_VER=1933",
         "-D_WIN32",
-        "-D_WIN64"
+        "-D_WIN64",
     ]
 
     # 查找所有 .cpp 文件
@@ -147,31 +145,27 @@ def generate_with_python(
     for cpp_file in cpp_files:
         relative_path = cpp_file.relative_to(workspace_root).as_posix()
 
+        # compile_commands.json 标准格式: arguments 为字符串列表
         cmd = {
             "directory": workspace_root.as_posix(),
             "file": relative_path,
-            "arguments": " ".join([
+            "arguments": [
                 "clang++",
                 "-xc++",
                 "-std=c++20",
                 "-fms-compatibility-version=19.33",
                 *ue_defines,
                 *include_args,
-                f"-c \"{relative_path}\""
-            ])
+                "-c",
+                relative_path,
+            ],
         }
         commands.append(cmd)
 
-    result = {
-        "version": 2,
-        "commands": commands
-    }
-
-    # 写入文件
+    # compile_commands.json 标准格式: 顶层为 JSON 数组
     output_path = workspace_root / "compile_commands.json"
     output_path.write_text(
-        json.dumps(result, indent=2, ensure_ascii=False),
-        encoding='utf-8'
+        json.dumps(commands, indent=2, ensure_ascii=False), encoding="utf-8"
     )
 
     Color.print(f"   [OK] Python 脚本生成成功: {len(commands)} 个条目", Color.GREEN)
@@ -180,7 +174,9 @@ def generate_with_python(
 
 def main():
     if len(sys.argv) < 3:
-        print("用法: generate_compile_commands.py <workspace_root> <engine_path> [project_path]")
+        print(
+            "用法: generate_compile_commands.py <workspace_root> <engine_path> [project_path]"
+        )
         sys.exit(1)
 
     workspace_root = Path(sys.argv[1])
@@ -198,7 +194,10 @@ def main():
         if not success:
             Color.print("", Color.RESET)
             Color.print("   [INFO] UBT 生成失败可能的原因:", Color.CYAN)
-            Color.print("     1. 项目尚未编译过（需要先在 UE 编辑器中编译至少一次）", Color.WHITE)
+            Color.print(
+                "     1. 项目尚未编译过（需要先在 UE 编辑器中编译至少一次）",
+                Color.WHITE,
+            )
             Color.print("     2. 项目文件损坏或配置错误", Color.WHITE)
             Color.print("", Color.RESET)
             Color.print("   -> 正在使用 Python 后备方案...", Color.YELLOW)

@@ -16,6 +16,7 @@
   "C_Cpp.default.cStandard": "c17",
   "C_Cpp.intelliSenseEngine": "default",
   "C_Cpp.errorSquiggles": "enabled",
+  "editor.bracketPairColorization.enabled": true,
   "files.exclude": {
     "**/.git": true,
     "**/.svn": true,
@@ -28,10 +29,18 @@
     "**/Saved": true,
     "**/DerivedDataCache": true
   },
+  "search.exclude": {
+    "**/Binaries/**": true,
+    "**/Intermediate/**": true,
+    "**/Saved/**": true,
+    "**/DerivedDataCache/**": true,
+    "**/Build/**": true
+  },
   "files.watcherExclude": {
     "**/Binaries/**": true,
     "**/Build/**": true,
     "**/Intermediate/**": true,
-    "**/Saved/**": true
+    "**/Saved/**": true,
+    "**/DerivedDataCache/**": true
   }
 }

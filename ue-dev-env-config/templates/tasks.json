@@ -26,9 +26,22 @@
         "Development",
         "-Project=$${config:unreal.project.path}",
         "-LiveCoding",
-        "-LiveCodingModules=$${config:unreal.engine.path}/Engine/Intermediate/LiveCodingModules.json",
-        "-LiveCodingManifest=$${config:unreal.engine.path}/Engine/Intermediate/LiveCoding.json",
         "-WaitMutex"
+      ],
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "new" },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Build Editor (DebugGame)",
+      "type": "shell",
+      "command": "$${config:unreal.engine.path}/Engine/Build/BatchFiles/Build.bat",
+      "args": [
+        "$${config:unreal.project.name}Editor",
+        "Win64",
+        "DebugGame",
+        "-Project=$${config:unreal.project.path}",
+        "-FromMsBuild"
       ],
       "group": "build",
       "presentation": { "reveal": "always", "panel": "new" },

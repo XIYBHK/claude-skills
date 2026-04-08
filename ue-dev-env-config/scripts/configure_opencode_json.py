@@ -29,6 +29,7 @@ setup_utf8_console()
 # 配置生成器
 # ========================================
 
+
 class OpencodeConfigGenerator:
     """OpenCode 配置生成器"""
 
@@ -51,7 +52,9 @@ class OpencodeConfigGenerator:
             Color.print(f"   路径: {compile_commands_path}", Color.YELLOW)
             Color.print(f"   IntelliSense 可能不准确", Color.YELLOW)
             print()
-            Color.print(f"   建议先运行 UE 项目生成或使用 VSCode 编译任务生成", Color.GRAY)
+            Color.print(
+                f"   建议先运行 UE 项目生成或使用 VSCode 编译任务生成", Color.GRAY
+            )
             print()
         else:
             Color.print(f"   [OK] 找到 compile_commands.json", Color.GREEN)
@@ -63,19 +66,28 @@ class OpencodeConfigGenerator:
                 "clangd": {
                     "command": [
                         "clangd",
-                        f"--compile-commands-dir={self.engine_path.as_posix()}"
+                        f"--compile-commands-dir={self.engine_path.as_posix()}",
                     ],
                     "extensions": [
-                        ".c", ".cpp", ".cc", ".cxx", ".c++",
-                        ".h", ".hpp", ".hh", ".hxx", ".h++"
+                        ".c",
+                        ".cpp",
+                        ".cc",
+                        ".cxx",
+                        ".c++",
+                        ".h",
+                        ".hpp",
+                        ".hh",
+                        ".hxx",
+                        ".h++",
                     ],
-                    "disabled": False
+                    "disabled": False,
                 }
-            }
+            },
         }
 
-        config_file = self.vscode_dir / "opencode.json"
-        with open(config_file, 'w', encoding='utf-8') as f:
+        # opencode.json 放在项目根目录（OpenCode 默认读取位置）
+        config_file = self.workspace_root / "opencode.json"
+        with open(config_file, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=4, ensure_ascii=False)
 
         Color.print(f"   [OK] 已生成 opencode.json", Color.GREEN)
@@ -87,6 +99,7 @@ class OpencodeConfigGenerator:
 # ========================================
 # 步骤函数
 # ========================================
+
 
 def step_detect_engine(args: argparse.Namespace) -> EngineInfo:
     """步骤 1: 检测或获取 UE 引擎"""
@@ -128,7 +141,7 @@ def step_detect_engine(args: argparse.Namespace) -> EngineInfo:
             if 0 <= idx < len(engines):
                 Color.print(f"   -> 已选择: {engines[idx].path}", Color.CYAN)
                 return engines[idx]
-            Color.print(f"   [ERROR] 无效选择，请输入 0-{len(engines)-1}", Color.RED)
+            Color.print(f"   [ERROR] 无效选择，请输入 0-{len(engines) - 1}", Color.RED)
         except ValueError:
             Color.print("   [ERROR] 请输入有效数字", Color.RED)
         except KeyboardInterrupt:
@@ -165,15 +178,24 @@ def print_summary(engine: EngineInfo, config_file: Path) -> None:
     """打印配置摘要"""
     print()
 
-    Color.print("╔══════════════════════════════════════════════════════════╗", Color.GREEN)
-    Color.print("║              配置完成！                                   ║", Color.GREEN)
-    Color.print("╚══════════════════════════════════════════════════════════╝", Color.GREEN)
+    Color.print(
+        "╔══════════════════════════════════════════════════════════╗", Color.GREEN
+    )
+    Color.print(
+        "║              配置完成！                                   ║", Color.GREEN
+    )
+    Color.print(
+        "╚══════════════════════════════════════════════════════════╝", Color.GREEN
+    )
     print()
 
     Color.print("配置摘要:", Color.CYAN)
     Color.print(f"   UE 引擎路径: {engine.path}", Color.WHITE)
     Color.print(f"   opencode.json: {config_file}", Color.WHITE)
-    Color.print(f"   compile_commands.json: {engine.path / 'compile_commands.json'}", Color.WHITE)
+    Color.print(
+        f"   compile_commands.json: {engine.path / 'compile_commands.json'}",
+        Color.WHITE,
+    )
     print()
 
     Color.print("下一步操作:", Color.CYAN)
@@ -199,12 +221,13 @@ def print_summary(engine: EngineInfo, config_file: Path) -> None:
 # 主函数
 # ========================================
 
+
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description='OpenCode JSON 配置生成工具',
-        formatter_class=argparse.RawDescriptionHelpFormatter
+        description="OpenCode JSON 配置生成工具",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument('-e', '--engine-path', help='指定 UE 引擎路径')
+    parser.add_argument("-e", "--engine-path", help="指定 UE 引擎路径")
 
     args = parser.parse_args()
 
@@ -230,5 +253,6 @@ if __name__ == "__main__":
     except Exception as e:
         Color.print(f"\n错误: {e}", Color.RED)
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

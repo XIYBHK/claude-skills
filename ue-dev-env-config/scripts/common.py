@@ -10,53 +10,19 @@ import sys
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional, List
-from enum import Enum
 
 
 # ========================================
 # 常量定义
 # ========================================
 
-class DriveLetter(str, Enum):
-    """Windows 驱动器字母枚举"""
-    A: str = "A:"
-    B: str = "B:"
-    C: str = "C:"
-    D: str = "D:"
-    E: str = "E:"
-    F: str = "F:"
-    G: str = "G:"
-    H: str = "H:"
-    I: str = "I:"
-    J: str = "J:"
-    K: str = "K:"
-    L: str = "L:"
-    M: str = "M:"
-    N: str = "N:"
-    O: str = "O:"
-    P: str = "P:"
-    Q: str = "Q:"
-    R: str = "R:"
-    S: str = "S:"
-    T: str = "T:"
-    U: str = "U:"
-    V: str = "V:"
-    W: str = "W:"
-    X: str = "X:"
-    Y: str = "Y:"
-    Z: str = "Z:"
-
-
 # 常见 UE 引擎安装路径
-EPIC_GAMES_PATHS = [
-    "Program Files/Epic Games",
-    "Epic Games"
-]
+EPIC_GAMES_PATHS = ["Program Files/Epic Games", "Epic Games"]
 
 # Visual Studio 2022 安装路径
 VS2022_PATHS = [
     "C:/Program Files/Microsoft Visual Studio/2022",
-    "C:/Program Files (x86)/Microsoft Visual Studio/2022"
+    "C:/Program Files (x86)/Microsoft Visual Studio/2022",
 ]
 
 # VS 版本列表
@@ -65,14 +31,15 @@ VS_EDITIONS = ["Enterprise", "Professional", "Community", "BuildTools"]
 # LLVM 安装路径（Windows）
 LLVM_PATHS_WINDOWS = [
     Path("C:/Program Files/LLVM/bin"),
-    Path("C:/Program Files (x86)/LLVM/bin")
+    Path("C:/Program Files (x86)/LLVM/bin"),
 ]
 
-# 常见 UE 项目基础路径
+# 常见 UE 项目基础路径（按优先级搜索）
 PROJECT_BASE_PATHS = [
-    Path("F:/Unreal Projects/CPP"),
+    Path(os.path.expandvars("%USERPROFILE%/Documents/Unreal Projects")),
+    Path("C:/Unreal Projects"),
     Path("D:/Unreal Projects"),
-    Path("C:/Unreal Projects")
+    Path("E:/Unreal Projects"),
 ]
 
 
@@ -80,30 +47,36 @@ PROJECT_BASE_PATHS = [
 # 控制台输出
 # ========================================
 
+
 class Color:
     """控制台颜色输出（ANSI 转义码）"""
 
-    RESET = '\033[0m'
-    RED = '\033[91m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    CYAN = '\033[96m'
-    GRAY = '\033[90m'
-    WHITE = '\033[97m'
+    RESET = "\033[0m"
+    RED = "\033[91m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    CYAN = "\033[96m"
+    GRAY = "\033[90m"
+    WHITE = "\033[97m"
 
     @staticmethod
-    def print(text: str, color: str = '') -> None:
+    def print(text: str, color: str = "") -> None:
         """打印带颜色的文本"""
         print(f"{color}{text}{Color.RESET}")
 
 
 def setup_utf8_console() -> None:
     """设置控制台为 UTF-8 编码（仅 Windows）"""
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         try:
             import io
-            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
+            sys.stdout = io.TextIOWrapper(
+                sys.stdout.buffer, encoding="utf-8", errors="replace"
+            )
+            sys.stderr = io.TextIOWrapper(
+                sys.stderr.buffer, encoding="utf-8", errors="replace"
+            )
         except Exception:
             pass
 
@@ -112,9 +85,11 @@ def setup_utf8_console() -> None:
 # 数据类
 # ========================================
 
+
 @dataclass(frozen=True)
 class EngineInfo:
     """UE 引擎信息"""
+
     version: str
     path: Path
     engine_type: str
@@ -129,6 +104,7 @@ class EngineInfo:
 @dataclass(frozen=True)
 class VSInfo:
     """Visual Studio 信息"""
+
     edition: str
     msvc_path: Path
 
@@ -136,6 +112,7 @@ class VSInfo:
 @dataclass(frozen=True)
 class WorkspaceInfo:
     """工作区信息"""
+
     type: str  # "Plugin", "Project", "Unknown"
     file: Optional[Path]
     root: Path
@@ -145,21 +122,27 @@ class WorkspaceInfo:
 # 平台工具
 # ========================================
 
+
 def get_available_drives() -> List[str]:
     """获取所有可用的驱动器"""
-    if sys.platform != 'win32':
-        return ['/']
-    return [f"{letter}:" for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" if os.path.exists(f"{letter}:")]
+    if sys.platform != "win32":
+        return ["/"]
+    return [
+        f"{letter}:"
+        for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        if os.path.exists(f"{letter}:")
+    ]
 
 
 def is_windows() -> bool:
     """检查是否为 Windows 平台"""
-    return sys.platform == 'win32'
+    return sys.platform == "win32"
 
 
 # ========================================
 # 检测器基类
 # ========================================
+
 
 class EngineDetector:
     """UE 引擎检测器"""
@@ -190,7 +173,7 @@ class EngineDetector:
 
                         version = ue_dir.name.replace("UE_", "")
                         # 排除 UE 5.0-5.2
-                        parts = version.split('.')
+                        parts = version.split(".")
                         if len(parts) >= 2:
                             try:
                                 if int(parts[0]) == 5 and 0 <= int(parts[1]) <= 2:
@@ -198,11 +181,13 @@ class EngineDetector:
                             except ValueError:
                                 pass
 
-                        engines.append(EngineInfo(
-                            version=version,
-                            path=ue_dir,
-                            engine_type="Epic Games Launcher"
-                        ))
+                        engines.append(
+                            EngineInfo(
+                                version=version,
+                                path=ue_dir,
+                                engine_type="Epic Games Launcher",
+                            )
+                        )
                 except (PermissionError, FileNotFoundError):
                     pass
 
@@ -210,11 +195,11 @@ class EngineDetector:
         for drive in get_available_drives():
             custom = Path(drive) / "UnrealEngine"
             if (custom / "Engine").exists():
-                engines.append(EngineInfo(
-                    version="Custom",
-                    path=custom,
-                    engine_type="Source Build"
-                ))
+                engines.append(
+                    EngineInfo(
+                        version="Custom", path=custom, engine_type="Source Build"
+                    )
+                )
 
         return engines
 
@@ -230,17 +215,21 @@ class VSMSVCDetector:
             if drive != "C:":
                 # Windows: 需要使用绝对路径拼接
                 if is_windows():
-                    bases.extend([
-                        Path(str(drive) + "\\VisualStudio\\2022"),
-                        Path(str(drive) + "\\Visual Studio\\2022"),
-                        Path(str(drive) + "\\VS2022")
-                    ])
+                    bases.extend(
+                        [
+                            Path(str(drive) + "\\VisualStudio\\2022"),
+                            Path(str(drive) + "\\Visual Studio\\2022"),
+                            Path(str(drive) + "\\VS2022"),
+                        ]
+                    )
                 else:
-                    bases.extend([
-                        Path(drive) / "VisualStudio/2022",
-                        Path(drive) / "Visual Studio/2022",
-                        Path(drive) / "VS2022"
-                    ])
+                    bases.extend(
+                        [
+                            Path(drive) / "VisualStudio/2022",
+                            Path(drive) / "Visual Studio/2022",
+                            Path(drive) / "VS2022",
+                        ]
+                    )
 
         for base in bases:
             if not base.exists():
@@ -253,18 +242,19 @@ class VSMSVCDetector:
                 if versions and (versions[0] / "bin/Hostx64/x64/cl.exe").exists():
                     return VSInfo(
                         edition="Direct Install",
-                        msvc_path=versions[0] / "bin/Hostx64/x64/cl.exe"
+                        msvc_path=versions[0] / "bin/Hostx64/x64/cl.exe",
                     )
 
             # 检查各版本
             for ed in VS_EDITIONS:
                 msvc = base / ed / "VC/Tools/MSVC"
                 if msvc.exists():
-                    versions = sorted(msvc.iterdir(), key=lambda x: x.name, reverse=True)
+                    versions = sorted(
+                        msvc.iterdir(), key=lambda x: x.name, reverse=True
+                    )
                     if versions and (versions[0] / "bin/Hostx64/x64/cl.exe").exists():
                         return VSInfo(
-                            edition=ed,
-                            msvc_path=versions[0] / "bin/Hostx64/x64/cl.exe"
+                            edition=ed, msvc_path=versions[0] / "bin/Hostx64/x64/cl.exe"
                         )
 
         return None
@@ -282,7 +272,8 @@ class ClangdDetector:
                     return path
         else:
             import shutil
-            clangd_path = shutil.which('clangd')
+
+            clangd_path = shutil.which("clangd")
             if clangd_path:
                 return Path(clangd_path).parent
         return None
@@ -291,12 +282,13 @@ class ClangdDetector:
     def check_clangd() -> tuple[bool, Optional[str]]:
         """检查 clangd 是否已安装"""
         import subprocess
+
         try:
             result = subprocess.run(
-                ['clangd', '--version'],
+                ["clangd", "--version"],
                 capture_output=True,
                 text=True,
-                timeout=5  # 5 秒超时（版本检查应该很快）
+                timeout=5,  # 5 秒超时（版本检查应该很快）
             )
             if result.returncode == 0:
                 return True, result.stdout.strip()
@@ -365,6 +357,7 @@ class ProjectPathDetector:
 # UI 工具
 # ========================================
 
+
 def print_box(title: str, width: int = 60) -> None:
     """打印标题框"""
     border = "╔" + "═" * (width - 2) + "╗"
@@ -392,7 +385,7 @@ def interactive_select(items: List, prompt: str, display_func=None) -> Optional[
 
     try:
         choice = input("   输入序号 (默认: N): ").strip()
-        if not choice or choice.lower() == 'n':
+        if not choice or choice.lower() == "n":
             return None
         return int(choice)
     except (ValueError, KeyboardInterrupt, EOFError):

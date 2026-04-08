@@ -11,7 +11,7 @@
       "cwd": "${engine_path}/Engine/Binaries/Win64",
       "environment": [],
       "console": "externalTerminal",
-      "preLaunchTask": "Compile Plugin in Project (快速编译)"
+      "preLaunchTask": "Build Editor (Full & Formal)"
     },
     {
       "name": "Attach to UE Editor",

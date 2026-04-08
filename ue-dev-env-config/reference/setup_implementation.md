@@ -1,6 +1,6 @@
 # VSCode UE 配置脚本实现参考
 
-此文档详细说明 `setup_vscode_env.ps1` 和相关脚本的关键实现细节，供扩展和参考使用。
+此文档详细说明 `setup_vscode_env.py` 和相关 Python 脚本的关键实现细节，供扩展和参考使用。
 
 ## 核心设计原则
 
@@ -8,74 +8,65 @@
 
 #### 空格路径支持
 
-所有路径处理均正确处理带空格的路径（如 "D:\Unreal Projects\My Game"）：
+所有路径处理使用 `pathlib.Path`，正确处理带空格的路径（如 "D:\Unreal Projects\My Game"）：
 
-```powershell
-# 正确的路径使用方式
-$arg = "'$($UEEnginePath.Replace('\', '/'))/Engine/Build/BatchFiles/Build.bat'"
-
-# 任务配置中的 args 数组
-args = @(
-    "'$($UEEnginePath.Replace('\', '/'))/Engine/Build/BatchFiles/Build.bat'",
-    "BuildPlugin",
-    ...
-)
+```python
+# 使用 Path 对象处理路径，自动处理空格和分隔符
+engine = Path("F:/Epic Games/UE_5.4")
+# .as_posix() 转换为正斜杠格式（JSON 模板需要）
+engine_posix = engine.as_posix()  # "F:/Epic Games/UE_5.4"
 ```
 
 #### 多盘符检测
 
 遍历所有实际存在的盘符，搜索 UE 引擎安装：
 
-```powershell
-$AvailableDrives = Get-PSDrive -PSProvider FileSystem | Where-Object {
-    $_.Root -match '^[A-Z]:\\$' -and (Test-Path $_.Root -ErrorAction SilentlyContinue)
-} | ForEach-Object { $_.Name + ":" }
+```python
+def get_available_drives() -> List[str]:
+    if sys.platform != 'win32':
+        return ['/']
+    return [f"{letter}:" for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            if os.path.exists(f"{letter}:")]
 ```
 
 ### 2. 工作区类型识别
 
 #### 插件工作区检测
 
-```powershell
-$upluginFiles = Get-ChildItem -Path $WorkspaceRoot -Filter "*.uplugin" -ErrorAction SilentlyContinue
-if ($upluginFiles.Count -gt 0) {
-    $PluginFile = $upluginFiles[0].FullName
-    $WorkspaceType = "Plugin"
-    $IsPlugin = $true
-}
-```
-
-#### 项目工作区检测
-
-```powershell
-$uprojectFiles = Get-ChildItem -Path $WorkspaceRoot -Filter "*.uproject" -ErrorAction SilentlyContinue
-if ($uprojectFiles.Count -gt 0) {
-    $ProjectFile = $uprojectFiles[0].FullName
-    $WorkspaceType = "Project"
-    $IsProject = $true
-}
+```python
+class WorkspaceDetector:
+    @staticmethod
+    def detect(root: Path) -> WorkspaceInfo:
+        plugins = list(root.glob("*.uplugin"))
+        if plugins:
+            return WorkspaceInfo(type="Plugin", file=plugins[0], root=root)
+        projects = list(root.glob("*.uproject"))
+        if projects:
+            return WorkspaceInfo(type="Project", file=projects[0], root=root)
+        return WorkspaceInfo(type="Unknown", file=None, root=root)
 ```
 
 #### 智能项目关联（插件工作区）
 
 自动向上搜索父目录中的 UE 项目（最多3层）：
 
-```powershell
-$currentDir = Split-Path -Parent $WorkspaceRoot
-$foundProjects = @()
-
-for ($i = 0; $i -lt 3; $i++) {
-    if ([string]::IsNullOrWhiteSpace($currentDir)) { break }
-
-    $uprojectFiles = Get-ChildItem -Path $currentDir -Filter "*.uproject" -ErrorAction SilentlyContinue
-    if ($uprojectFiles.Count -gt 0) {
-        foreach ($proj in $uprojectFiles) {
-            $foundProjects += $proj.FullName
-        }
-    }
-
-    $currentDir = Split-Path -Parent $currentDir
-}
+```python
+class ProjectPathDetector:
+    @staticmethod
+    def find(workspace_root: Path) -> List[Path]:
+        found = []
+        current = workspace_root.parent
+        for _ in range(3):
+            if not current:
+                break
+            for proj in current.glob("*.uproject"):
+                if proj not in found:
+                    found.append(proj)
+            current = current.parent
+        # 同时搜索常见项目目录
+        for base in PROJECT_BASE_PATHS:
+            ...
+        return found
 ```
 
 ### 3. UE 引擎路径检测
@@ -84,83 +75,82 @@ for ($i = 0; $i -lt 3; $i++) {
 
 支持两个 Epic Games 常见路径：
 
-```powershell
-$EpicGamesPaths = @(
-    "Program Files\Epic Games",    # Windows 标准路径
-    "Epic Games"                  # 其他盘符根路径
-)
+```python
+EPIC_GAMES_PATHS = [
+    "Program Files/Epic Games",    # Windows 标准路径
+    "Epic Games"                   # 其他盘符根路径
+]
 
-foreach ($drive in $AvailableDrives) {
-    foreach ($epPath in $EpicGamesPaths) {
-        $fullPath = Join-Path $drive $epPath
-        # 检查 UE_XX 目录
-        Get-ChildItem $fullPath -Directory | Where-Object { $_.Name -match "^UE_" }
-    }
-}
+# 遍历所有盘符
+for drive in get_available_drives():
+    for base in EPIC_GAMES_PATHS:
+        base_path = Path(str(drive) + "\\" + base)  # Windows
+        for ue_dir in base_path.iterdir():
+            if ue_dir.name.startswith("UE_") and (ue_dir / "Engine").exists():
+                # 过滤 UE 5.0-5.2（仅支持 5.3+）
+                ...
 ```
 
 #### 自定义编译引擎路径
 
-支持用户自定义编译的 UnrealEngine：
-
-```powershell
-foreach ($drive in $AvailableDrives) {
-    $customPath = Join-Path $drive "UnrealEngine"
-    if (Test-Path "$customPath\Engine" -ErrorAction SilentlyContinue) {
-        $UEPaths += @{
-            Version = "Custom ($drive)"
-            Path = $customPath
-            Type = "Source Build"
-        }
-    }
-}
+```python
+for drive in get_available_drives():
+    custom = Path(drive) / "UnrealEngine"
+    if (custom / "Engine").exists():
+        engines.append(EngineInfo(
+            version="Custom", path=custom, engine_type="Source Build"))
 ```
 
 ### 4. Visual Studio 检测
 
 #### 版本和 Edition 检测
 
-```powershell
-$VSBasePaths = @()
-$VSBasePaths += "C:\Program Files\Microsoft Visual Studio\2022"
-$VSBasePaths += "C:\Program Files (x86)\Microsoft Visual Studio\2022"
+```python
+VS2022_PATHS = [
+    "C:/Program Files/Microsoft Visual Studio/2022",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2022"
+]
+VS_EDITIONS = ["Enterprise", "Professional", "Community", "BuildTools"]
 
-# 遍历所有盘符
-foreach ($drive in $AvailableDrives) {
-    if (Test-Path $drive -ErrorAction SilentlyContinue) {
-        $VSBasePaths += Join-Path $drive "VisualStudio\2022"
-        $VSBasePaths += Join-Path $drive "Visual Studio\2022"
-        $VSBasePaths += Join-Path $drive "VS2022"
-    }
-}
+# 同时检查非 C 盘的自定义安装路径
+for drive in get_available_drives():
+    if drive != "C:":
+        bases.extend([
+            Path(str(drive) + "\\VisualStudio\\2022"),
+            Path(str(drive) + "\\VS2022")
+        ])
 ```
 
 #### MSVC 编译器路径定位
 
-```powershell
-$VSEditions = @("Enterprise", "Professional", "Community", "BuildTools")
-
+```python
 # 优先检查直接安装（无 Edition 子文件夹）
-$directMsvcPath = Join-Path $basePath "VC\Tools\MSVC"
-if (Test-Path $directMsvcPath -ErrorAction SilentlyContinue) {
-    $msvcVersions = Get-ChildItem $directMsvcPath -Directory | Sort-Object Name -Descending
-    if ($msvcVersions.Count -gt 0) {
-        $foundVS = "Direct Install ($basePath)"
-        $foundMSVC = Join-Path $msvcVersions[0].FullName "bin\Hostx64\x64\cl.exe"
-    }
-}
+msvc = base / "VC/Tools/MSVC"
+if msvc.exists():
+    versions = sorted(msvc.iterdir(), key=lambda x: x.name, reverse=True)
+    if versions and (versions[0] / "bin/Hostx64/x64/cl.exe").exists():
+        return VSInfo(edition="Direct Install", msvc_path=...)
 
 # 然后检查标准 Edition 子文件夹
-foreach ($edition in $VSEditions) {
-    $editionPath = Join-Path $basePath $edition
-    $msvcPath = Join-Path $editionPath "VC\Tools\MSVC"
-    if (Test-Path $msvcPath -ErrorAction SilentlyContinue) {
-        # 获取最新版本
-    }
-}
+for ed in VS_EDITIONS:
+    msvc = base / ed / "VC/Tools/MSVC"
+    ...
 ```
 
 ### 5. 配置文件处理
+
+#### 模板系统
+
+使用 Python `string.Template` 渲染配置模板：
+
+```python
+from string import Template
+
+content = template_path.read_text(encoding='utf-8')
+result = Template(content).safe_substitute(**vars)
+# 修复 VSCode ${config:...} 变量被转义的问题
+result = result.replace(r"\${", "${")
+```
 
 #### c_cpp_properties.json 生成
 
@@ -169,72 +159,37 @@ foreach ($edition in $VSEditions) {
 - 插件工作区：`${workspaceFolder}/**` + 项目源码 + 引擎 + 引擎插件
 - 项目工作区：`${workspaceFolder}/**` + 引擎 + 项目插件 + 引擎
 
-```json
-{
-  "configurations": [
-    {
-      "name": "Win64",
-      "includePath": [
-        "`${workspaceFolder}/**",
-        "引擎/Engine/Source/**",
-        "引擎/Engine/Plugins/**",
-        "项目/Source/**",
-        "项目/Plugins/**"
-      ],
-      "defines": [
-        "WITH_EDITOR=1",
-        "UE_BUILD_DEVELOPMENT=1",
-        "UE_EDITOR=1",
-        "PLATFORM_WINDOWS=1",
-        "PLATFORM_MICROSOFT=1",
-        "WIN64=1",
-        "UBT_COMPILED_PLATFORM=Win64",
-        "UNICODE=1"
-      ]
-    }
-  ]
-}
-```
+#### tasks.json 编译任务
 
-#### tasks.json PowerShell Shell 配置
-
-确保 PowerShell 任务使用正确的 shell 配置：
+使用 VSCode 设置变量引用引擎/项目路径：
 
 ```json
 {
   "type": "shell",
-  "command": "&",
+  "command": "${config:unreal.engine.path}/Engine/Build/BatchFiles/Build.bat",
   "args": [
-      "Engine/Build/BatchFiles/Build.bat"
-  ],
-  "options": {
-      "shell": {
-          "executable": "powershell.exe",
-          "args": ["-ExecutionPolicy", "Bypass", "-Command"]
-      }
-  }
+    "${config:unreal.project.name}Editor",
+    "Win64",
+    "Development",
+    "-Project=${config:unreal.project.path}"
+  ]
 }
 ```
 
 ### 6. compile_commands.json 支持
 
-使用 UE 引擎根目录的 compile_commands.json 获取最准确的编译参数：
+双模式策略：优先使用 UBT 生成，失败时回退到 Python 脚本：
 
-```json
-{
-  "configurations": [
-    {
-      "compileCommands": "引擎/compile_commands.json",
-      "includePath": [
-        "引擎/Engine/Source/**",
-        "引擎/Engine/Plugins/**",
-        "项目/Source/**",
-        "项目/Plugins/**"
-      ]
-    }
-  ]
-}
+```python
+# 优先尝试 UBT（需要项目已编译过）
+success = generate_with_ubt(project_path, engine_path, workspace_root)
+
+# UBT 失败时使用 Python 后备方案
+if not success:
+    success = generate_with_python(workspace_root, engine_path)
 ```
+
+UBT 模式使用 `-Mode=GenerateClangDatabase`，Python 后备模式生成标准格式的 compile_commands.json（顶层 JSON 数组，arguments 为字符串列表）。
 
 ## OpenCode LSP 配置
 
@@ -244,137 +199,105 @@ foreach ($edition in $VSEditions) {
 {
   "$schema": "https://opencode.ai/config.json",
   "lsp": {
-      "clangd": {
-          "command": ["clangd", "--compile-commands-dir=<引擎路径>"],
-          "extensions": [".c", ".cpp", ".cc", ".cxx", ".c++", ".h", ".hpp", ".hh", ".hxx", ".h++"],
-          "disabled": false
-      }
+    "clangd": {
+      "command": ["clangd", "--compile-commands-dir=<引擎路径>"],
+      "extensions": [".c", ".cpp", ".cc", ".cxx", ".c++", ".h", ".hpp", ".hh", ".hxx", ".h++"],
+      "disabled": false
+    }
   }
 }
 ```
 
-### clangd 自动安装
+### .clangd 配置
 
-使用 winget 自动安装 LLVM.LLVM：
+自动生成 `.clangd` 配置文件，抑制 UE 代码库中常见的 clangd 误报：
 
-```powershell
-winget install LLVM.LLVM --accept-package-agreements --accept-source-agreements
-
-# 验证安装
-$verifyVersion = & clangd --version
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "   [OK] clangd 已安装" -ForegroundColor Green
-}
+```yaml
+CompileFlags:
+  Add:
+    - -ferror-limit=0
+    - -Wno-everything
+Diagnostics:
+  Suppress:
+    - pp_file_not_found    # .generated.h 在编译前不存在
+Index:
+  Background: Build
 ```
 
-### PATH 更新
+### clangd 自动安装
 
-```powershell
-# 添加 LLVM 到用户 PATH
-$newPath = "$userPath;C:\Program Files\LLVM\bin"
-[Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+使用 winget 安装 LLVM 并配置 PATH：
 
-# 验证
-$verifyPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
+```python
+subprocess.run(['winget', 'install', 'LLVM.LLVM',
+                '--accept-package-agreements', '--accept-source-agreements'],
+               timeout=600)
+
+# 添加到用户 PATH
+subprocess.run(['powershell', '-Command',
+    f'[System.Environment]::SetEnvironmentVariable("Path", "{new_path}", "User")'])
 ```
 
 ## 关键实现细节
 
 ### 1. 错误处理
 
-所有操作使用 try-catch 捕获错误，确保流程稳定：
+所有操作使用 try-except 捕获错误，确保流程稳定：
 
-```powershell
-try {
-    # 检测或操作
-}
-catch {
-    Write-Host "   ❌ 操作失败" -ForegroundColor Red
-    Write-Host "   错误: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
-}
+```python
+try:
+    result = subprocess.run(cmd_args, capture_output=True, text=True, timeout=180)
+except subprocess.TimeoutExpired:
+    Color.print("   [WARN] 操作超时", Color.YELLOW)
+except Exception as e:
+    Color.print(f"   [ERROR] 操作失败: {e}", Color.RED)
 ```
 
 ### 2. 用户交互
 
-#### 引擎版本选择
-
-```powershell
-if ($UEPaths.Count -gt 1) {
-    Write-Host "   选择要使用的引擎版本:" -ForegroundColor Yellow
-    for ($i = 0; $i -lt $UEPaths.Count; $i++) {
-        Write-Host "   [$i] $($UEPaths[$i].Version) - $($UEPaths[$i].Path)"
-    }
-    $choice = Read-Host "   请输入序号 (默认: 0)"
-    if ([string]::IsNullOrWhiteSpace($choice)) { $choice = 0 }
-    $selectedUE = $UEPaths[[int]$choice]
-}
+```python
+def interactive_select(items: List, prompt: str, display_func=None) -> Optional[int]:
+    if len(items) == 1:
+        return 0  # 自动选择唯一选项
+    # 显示选择列表
+    for i, item in enumerate(items):
+        text = display_func(item) if display_func else str(item)
+        Color.print(f"   [{i}] {text}", Color.WHITE)
+    choice = input("   输入序号 (默认: N): ").strip()
+    ...
 ```
 
-#### 项目路径选择
+### 3. UTF-8 控制台处理
 
-```powershell
-if ($foundProjects.Count -gt 0) {
-    Write-Host "   选择要关联的项目（用于调试）:" -ForegroundColor Yellow
-    for ($i = 0; $i -lt $foundProjects.Count; $i++) {
-        Write-Host "   [$i] $(Split-Path -Leaf $foundProjects[$i])"
-    }
-    $choice = Read-Host "   请输入序号 (默认: N)"
-}
-```
+Windows 中文环境下正确处理编码：
 
-### 3. 配置保留策略
-
-所有配置操作均保留用户自定义：
-
-```powershell
-# 检查现有配置文件
-if (Test-Path $configFile) {
-    $config = Get-Content $configFile -Raw | ConvertFrom-Json
-
-    # 保留现有 includePath
-    $existingPaths = $config.configurations[0].includePath
-
-    # 添加新的路径
-    $newIncludePath = $existingPaths + $engineIncludes
-}
-
-# 仅更新必要的字段
-$config.configurations[0].compileCommands = $compileCommandsPath
-```
-
-### 4. 文本替换作为备用
-
-当 JSON 解析失败时，使用正则表达式文本替换：
-
-```powershell
-catch {
-    Write-Host "   [WARN] JSON 解析失败，使用文本替换模式" -ForegroundColor Yellow
-
-    # 替换引擎路径（正则表达式）
-    $content = $content -replace "'[A-Z]:/[^']*?/Epic Games/UE_[\d\.]+", "'$UEEnginePath'"
-    $content = $content -replace "'[A-Z]:/[^']*?/UnrealEngine", "'$UEEnginePath'"
-
-    # 替换项目路径
-    $content = $content -replace "'[A-Z]:/[^']*?\.uproject'", "'$UEProjectPath'"
-}
+```python
+def setup_utf8_console() -> None:
+    if sys.platform == 'win32':
+        import io
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 ```
 
 ## 扩展指南
 
 ### 添加新的配置模板
 
-要扩展脚本以支持新的配置需求：
+1. 在 `templates/` 创建模板文件（使用 `$variable` 占位符）
+2. 在 `ConfigGenerator.generate()` 添加渲染逻辑
+3. 更新 SKILL.md 的配置文件列表
 
-1. **新的编译器** - 在 MSVC 检测部分添加新的编译器路径检测
-2. **新的 IDE** - 添加对其他 IDE（如 CLion、Rider）的配置支持
-3. **新的配置文件** - 添加对其他配置文件类型的支持
+### 添加新的检测器
+
+1. 在 `common.py` 创建检测器类
+2. 添加 `detect()` 静态方法
+3. 在主脚本的步骤函数中调用
 
 ### 修改现有功能
 
-1. **工作区类型** - 添加新的工作区类型识别逻辑
-2. **路径检测** - 改进路径检测算法，支持更多路径模式
-3. **配置生成** - 增强配置文件模板，添加新的设置项
+1. **工作区类型** - 在 `WorkspaceDetector.detect()` 添加新的文件匹配
+2. **路径检测** - 在对应常量列表中添加新路径
+3. **配置生成** - 修改 `_get_template_vars()` 添加新变量
 
 ## 测试建议
 
@@ -388,16 +311,16 @@ catch {
 
 ### Q: 如何切换到不同的 UE 版本？
 
-**A:** 重新运行脚本并选择不同的版本，或使用 `-UEEnginePath` 参数强制指定。
+**A:** 重新运行脚本并选择不同的版本，或使用 `-e` 参数强制指定引擎路径。
 
 ### Q: 如何为多个项目配置？
 
-**A:** 运行 `scripts\setup_vscode_env.ps1` 并选择其中一个项目。可以在 `launch.json` 中手动添加其他项目配置。
+**A:** 运行 `python scripts/setup_vscode_env.py` 并选择其中一个项目。可以在 `launch.json` 中手动添加其他项目配置。
 
 ### Q: 配置后 IntelliSense 仍然无法识别引擎头文件？
 
 **A:**
-1. 重新加载 VSCode 窗口（F1 → Reload Window）
+1. 重新加载 VSCode 窗口（F1 -> Reload Window）
 2. 运行 "Generate Project Files" 任务
 3. 检查 `c_cpp_properties.json` 中的路径是否正确
 4. 运行 "Rebuild IntelliSense Database" 任务
@@ -405,7 +328,7 @@ catch {
 ### Q: OpenCode LSP 如何验证是否工作？
 
 **A:**
-1. 重启 opencode
+1. 重启 OpenCode
 2. 打开任意 C/C++ 文件
-3. 检查 opencode 日志确认 clangd 已启动
+3. 检查 OpenCode 日志确认 clangd 已启动
 4. 使用 `lsp` 工具测试功能（如跳转到定义）

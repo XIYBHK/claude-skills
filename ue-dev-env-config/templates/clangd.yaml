@@ -1,0 +1,20 @@
+# .clangd - UE 项目 clangd 配置
+# 抑制 UE 代码库中常见的 clangd 误报
+
+CompileFlags:
+  Add:
+    - -ferror-limit=0
+    - -Wno-everything
+    - -Wno-unknown-pragmas
+
+Diagnostics:
+  Suppress:
+    - pp_file_not_found
+    - undeclared_var_use
+  ClangTidy:
+    Remove:
+      - modernize-*
+      - readability-*
+
+Index:
+  Background: Build

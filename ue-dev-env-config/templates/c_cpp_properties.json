@@ -20,7 +20,12 @@
         "WIN64=1",
         "UBT_COMPILED_PLATFORM=Win64",
         "UNICODE=1",
-        "_UNICODE=1"
+        "_UNICODE=1",
+        "IS_MONOLITHIC=0",
+        "WITH_PLUGIN_SUPPORT=1",
+        "WITH_UNREAL_DEVELOPER_TOOLS=1",
+        "UE_BUILD_SHIPPING=0",
+        "IS_PROGRAM=0"
       ],
       "compilerPath": "$compiler_path",
       "cppStandard": "c++20",
