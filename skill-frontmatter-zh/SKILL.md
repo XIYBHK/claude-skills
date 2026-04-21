@@ -1,6 +1,6 @@
 ---
 name: skill-frontmatter-zh 技能中文化
-description: 扫描 skills 目录下所有 SKILL.md 的 YAML frontmatter，自动为 name 和 description 添加中文翻译。触发时机：用户要求"中文化 skills"、"翻译 skill 的 name/description"、"给 skill 加中文说明"、"批量处理 SKILL.md frontmatter"、"skill 元数据中文化"、"同步上游 skill 后重新中文化"。默认目录 ~/.claude/skills/，可传入其他路径（如项目级 .claude/skills/）。只改 name 和 description 两个字段，保留 license/metadata/allowed-tools 等其他 frontmatter 字段不变，不触及 SKILL.md 正文。
+description: 扫描 skills 目录下所有 SKILL.md 的 YAML frontmatter，自动为 name 和 description 添加中文翻译；并支持同步 fork/submodule 的上游更新后再判断是否需要重新中文化。触发时机：用户要求"中文化 skills"、"翻译 skill 的 name/description"、"给 skill 加中文说明"、"批量处理 SKILL.md frontmatter"、"skill 元数据中文化"、"同步上游 skill 后重新中文化"、"拉取 fork 上游更新"、"更新 submodule 后中文化"、"检查 skill 有没有新版本"。默认目录 ~/.claude/skills/，可传入其他路径（如项目级 .claude/skills/）。只改 name 和 description 两个字段，保留 license/metadata/allowed-tools 等其他 frontmatter 字段不变，不触及 SKILL.md 正文。
 ---
 
 # skill-frontmatter-zh: 技能 Frontmatter 中文化
@@ -96,6 +96,54 @@ description 的 YAML 书写形式多样，修改时必须匹配原格式：
 ├─ 已中文化、跳过 X 个：[列表]
 ├─ 新翻译 Y 个：[列表]
 └─ 格式异常需手动处理 Z 个：[列表及原因]
+```
+
+## 同步 submodule upstream 后重新中文化
+
+当用户要求 "同步 skill 上游"、"更新 fork"、"拉取上游后再中文化"、"检查 skill 有没有新版本" 时执行此流程。场景：本仓库部分 skill 是 submodule（fork 自原作者），需要定期拉取原作者新 commit，拉取后可能需要重新中文化。
+
+### 流程
+
+1. **枚举 submodule**：
+   ```bash
+   git -C <主仓库> config --file .gitmodules --get-regexp 'path$' | awk '{print $2}'
+   ```
+
+2. **对每个 submodule 拉取 upstream 并看差异**：
+   ```bash
+   git -C <submodule> fetch upstream
+   git -C <submodule> log --oneline HEAD..upstream/main
+   ```
+   无输出则 upstream 无新 commit，跳过该 submodule。
+
+3. **有更新则合并到 fork**：
+   ```bash
+   git -C <submodule> rebase upstream/main
+   git -C <submodule> push --force-with-lease origin main
+   ```
+   - rebase 冲突通常源自被中文化过的 name/description 被上游修改 → 保留中文版本，手动解决后 `git rebase --continue`。
+   - 用 `--force-with-lease` 而非 `--force`：只在远端未变时生效，更安全。
+
+4. **主仓库记录新 submodule pointer**：
+   ```bash
+   git -C <主仓库> add <submodule-path>
+   # 随下次主仓库 commit 一并提交
+   ```
+   必须 commit，否则 submodule 新内容不会在别人 clone 主仓库时自动拉齐。
+
+5. **判断是否需要重新中文化**（核心诉求）：
+   - 若 rebase 成功保留了中文版本 → 无需改动。
+   - 若上游覆盖了 frontmatter（name 重置为纯英文，或 description 重写为英文）→ 按[主工作流程](#工作流程)的第 3-6 步处理（判断 → 生成翻译 → 保留原 YAML 格式 → Edit 应用）。
+   - 上游 frontmatter 新增了与中文化无关的字段 → 不干预（遵循"只改 name 和 description"硬性规则）。
+
+### 汇报格式
+
+```
+同步 N 个 submodule
+├─ 已是最新，跳过 X 个：[列表]
+├─ 已同步，中文化无需变更 Y 个：[列表]
+├─ 已同步并重新中文化 Z 个：[列表 + 变更简述]
+└─ rebase 冲突需手动介入 W 个：[列表]
 ```
 
 ## 硬性规则
