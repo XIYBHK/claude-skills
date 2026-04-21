@@ -1,0 +1,6 @@
+[submodule "humanizer-zh"]
+	path = humanizer-zh
+	url = https://github.com/XIYBHK/Humanizer-zh.git
+[submodule "web-access"]
+	path = web-access
+	url = https://github.com/XIYBHK/web-access.git
