@@ -1,5 +1,5 @@
 ---
-name: ue-code-simplifier
+name: ue-code-simplifier UE 代码审查
 description: UE C++ 插件开发终极审查与优化标杆。Use for ANY task involving reviewing, checking, optimizing, refactoring, or improving existing Unreal Engine C++ plugin code. Trigger whenever the user mentions UE/UE5/Unreal C++ code combined with words like：看下、审查、检查、优化、重构、简化、性能、质量、内存、GC、Tick、容器选型、Marketplace、FAB、代码评审、插件质量。Also trigger for UE C++ performance problems (TMap、空间查询、热路径、帧率), memory/GC/safety concerns (UPROPERTY、check/ensure、IsValid), compilation warnings (C5038、TInlineAllocator), or preparing .h/.cpp files for FAB/Marketplace submission. Do NOT trigger for: writing new UE code from scratch, Blueprint-only tasks, HLSL/shader work, packaging/deployment issues, editor crash debugging, or project migration between UE versions.
 ---
 

@@ -1,6 +1,6 @@
 ---
-name: defuddle
-description: Extract clean markdown content from web pages using Defuddle CLI, removing clutter and navigation to save tokens. Use instead of WebFetch when the user provides a URL to read or analyze, for online documentation, articles, blog posts, or any standard web page.
+name: defuddle 网页提取
+description: 使用 Defuddle CLI 从网页提取干净的 markdown 内容，移除杂乱元素和导航以节省 token。当用户提供 URL 用于阅读或分析、在线文档、文章、博客或任何标准网页时使用此 skill 代替 WebFetch。
 ---
 
 # Defuddle

@@ -1,6 +1,6 @@
 ---
-name: obsidian-markdown
-description: Create and edit Obsidian Flavored Markdown with wikilinks, embeds, callouts, properties, and other Obsidian-specific syntax. Use when working with .md files in Obsidian, or when the user mentions wikilinks, callouts, frontmatter, tags, embeds, or Obsidian notes.
+name: obsidian-markdown Obsidian 笔记
+description: 创建和编辑 Obsidian Flavored Markdown，包含 wikilinks、嵌入、callouts、属性和其他 Obsidian 专有语法。当处理 Obsidian 中的 .md 文件，或用户提及 wikilinks、callouts、frontmatter、标签、嵌入或 Obsidian 笔记时使用。
 ---
 
 # Obsidian Flavored Markdown Skill

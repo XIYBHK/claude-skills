@@ -1,6 +1,6 @@
 ---
-name: opencode-relay-api
-description: Use when configuring OpenCode (anomalyco/opencode v1.3+) to use a relay/proxy API endpoint instead of official provider APIs. Triggers - setting up OpenCode on new machine, 404 Not Found from relay, baseURL not working, OAuth overriding relay config, Gemini v1beta path mismatch.
+name: opencode-relay-api OpenCode 中继
+description: 当配置 OpenCode（anomalyco/opencode v1.3+）使用中继/代理 API 端点替代官方供应商 API 时使用。触发场景：在新机器上配置 OpenCode、中继返回 404 Not Found、baseURL 不生效、OAuth 覆盖中继配置、Gemini v1beta 路径不匹配。
 ---
 
 # OpenCode Relay API Configuration
