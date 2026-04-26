@@ -70,5 +70,6 @@ v0.1 schema 采用**混合命名风格**，规则：
 | `git.autoPush` | bool | `false` | 是否每任务 commit 后自动 git push。v0.1 仅 `false`，预留 v0.3 |
 | `claude.model` | string \| null | `null` | 显式指定 Claude 模型；`null` 走 claude CLI 默认（当前 session 选择） |
 | `claude.mcp.context7Available` | bool | `false` | context7 MCP 可用性声明。`true` 时 CR-5 查证优先走 MCP；`false` 时走 WebSearch 兜底 |
+| `verify.browserTests.enabled` | bool | 模板 `false` / INIT 段 4 覆盖 | **v0.1.1 起硬规则**：INIT 段 4 生成 `config.json` 时，若段 1 Q3 形态为"UI / 浏览器测试" → 覆盖为 `true`；其他形态保持 `false`。详见 `INIT.md` §段 4 Q3 形态映射。这是对齐 Anthropic《effective harnesses》的基础 E2E 原则 |
 
 **为什么保留 `totalBudgetMinutes=0` 而不是删字段**：v0.2 并行/超时停机是明确路线图，字段先稳定在 schema 里，比到时再破坏 `schemaVersion` 好。

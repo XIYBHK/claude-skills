@@ -72,6 +72,19 @@
 | `.devloop/progress.md` | 模板初始化为空 |
 | `.devloop/lessons.md` | 模板初始化为空 |
 
+### Q3 形态 → `browserTests` 默认映射（v0.1.1）
+
+基于段 1 Q3 识别的项目形态，生成 `config.json` 时**必须**按下表设置 `verify.browserTests.enabled`：
+
+| Q3 形态 | `browserTests.enabled` | 理由 |
+|---|---|---|
+| UI / 浏览器测试 | `true` | 对齐《effective harnesses》原则：UI 项目必须像用户一样端到端测 |
+| 后端 API | `false` | API 用 schema + exit code 验证更直接 |
+| UE 插件 / CLI / 库 | `false` | 无浏览器可测 |
+| 手动验证兜底 | `false` | 无法自动化 |
+
+UI 项目开 `browserTests.enabled=true` 时，必须同时填 `verify.browserTests.url` 和 `requiredSelectors` 至少 1 项（否则 `cmd_check.json` 标 fail）。
+
 **CR-4 自动触发**：对 `config.json` 每条命令做两类验证：
 
 1. **可执行程序检测**：提取首个 token（`npm run build` → `npm`），跑 `<token> --version`
