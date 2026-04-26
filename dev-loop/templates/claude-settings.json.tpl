@@ -1,5 +1,4 @@
 {
-  "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/main/schema/settings.json",
   "hooks": {
     "PreToolUse": [
       {
