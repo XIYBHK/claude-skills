@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0",
+  "project": { "name": "fixture", "mainBranch": "main", "createdAt": "2026-04-26T00:00:00Z", "lastRunAt": null },
+  "tasks": [
+    { "id": "T-001", "title": "done task", "description": "", "steps": [], "estimated_files": 2, "depends_on": [], "category": "chore", "scope": "p", "verify_cmds": ["true"], "passes": true,  "attempts": 1, "blocked": false, "blockReason": "", "lastError": "", "notes": "", "startedAt": null, "completedAt": null },
+    { "id": "T-002", "title": "next available", "description": "", "steps": [], "estimated_files": 3, "depends_on": ["T-001"], "category": "feat", "scope": "p", "verify_cmds": ["true"], "passes": false, "attempts": 0, "blocked": false, "blockReason": "", "lastError": "", "notes": "", "startedAt": null, "completedAt": null },
+    { "id": "T-003", "title": "blocked by missing dep", "description": "", "steps": [], "estimated_files": 2, "depends_on": ["T-999"], "category": "feat", "scope": "p", "verify_cmds": ["true"], "passes": false, "attempts": 0, "blocked": false, "blockReason": "", "lastError": "", "notes": "", "startedAt": null, "completedAt": null }
+  ]
+}
