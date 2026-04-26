@@ -150,7 +150,22 @@ $done = 0
 
 while ($true) {
     $task = Select-NextTask -Path '.devloop/task.json'
-    if (-not $task) { Write-Host '✓ 全部任务完成'; break }
+    if (-not $task) {
+        # P3-1: 区分"全部完成" vs "本轮无 runnable 但全局未完工"。
+        # 原实现无差别打印 "全部任务完成" 并 exit 0，让自动化调用方把
+        # "所有 task 都 blocked / 依赖环卡死" 误判为成功。
+        $all = @((Get-Content '.devloop/task.json' -Raw | ConvertFrom-Json).tasks)
+        $blocked = @($all | Where-Object { $_.blocked }).Count
+        $pending = @($all | Where-Object { -not $_.passes -and -not $_.blocked }).Count
+        if ($blocked -gt 0 -or $pending -gt 0) {
+            # 直接写 stderr 绕开 $ErrorActionPreference='Stop' 下 Write-Error 会
+            # 抛异常让进程以 exit 1 终止、永远跑不到 exit 5 的问题。
+            [Console]::Error.WriteLine("no runnable tasks: blocked=$blocked pending=$pending")
+            exit 5
+        }
+        Write-Host '✓ 全部任务完成'
+        break
+    }
 
     Write-Host ""
     Write-Host ">>> 任务 $($task.id): $($task.title)"

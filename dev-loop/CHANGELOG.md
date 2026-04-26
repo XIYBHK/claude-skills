@@ -1,5 +1,35 @@
 # Dev-Loop Skill Changelog
 
+## v0.1.4 (2026-04-26)
+
+用户独立核验 v0.1.3 后发现终态退出语义的假阳性：
+
+- **P3-1** `run.ps1` — 唯一 task 被 v0.1.3 正确标为 `blocked` 后，
+  主循环下一轮 `Select-NextTask` 返回 `$null`，原实现无差别打印
+  "✓ 全部任务完成" 并 `exit 0`，让自动化调用方（CI/上层 runner）
+  把 "所有 task 都 blocked / 依赖环卡死" 误判为成功。
+  修复：在 `$task` 为 null 时先回读 `task.json` 真实终态，若存在
+  `blocked` 或未通过的 `pending` → 写 stderr `no runnable tasks:
+  blocked=X pending=Y` 并 `exit 5`（新码位，与现有 `exit 2` "连续
+  N 个 blocked 达阈值" 区分）；只有全部 `passes=true` 才走 "✓ 全部
+  任务完成" + `exit 0` 路径。
+  次要发现：`$ErrorActionPreference = 'Stop'` 下 `Write-Error` 会立即
+  抛异常让进程以 `exit 1` 终止，跑不到后面的 `exit N`；P3-1 的新路径
+  改用 `[Console]::Error.WriteLine` 直写 stderr 绕开。其余既有
+  `Write-Error; exit N` 位置（harness 3、gate 1、commit 4、连续 blocked
+  2）存在同类隐性 exit 1 化问题，非本次 scope，留待 v0.1.5 统一整改。
+
+Pester 测试强化：
+- `tests/run_integration.Tests.ps1` case A（fake claude exit 99）新增
+  `$r.ExitCode | Should -Be 5` + `Should -Match 'no runnable tasks'`，
+  实证 P3-1 修复；case B（happy path）新增 `$r.ExitCode | Should -Be 0`
+  防止 exit code 回归。
+
+发布一致性：v0.1.3 是 lightweight tag，本轮及以后统一回 annotated tag
+（与 v0.1.0/0.1.1/0.1.2 一致）。
+
+Pester: 55/55。
+
 ## v0.1.3 (2026-04-26)
 
 用户本机实测发现 4 条 v0.1.2 遗留洞 + 1 条中文 Windows 环境兼容 bug：

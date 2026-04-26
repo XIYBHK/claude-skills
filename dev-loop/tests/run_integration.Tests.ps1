@@ -100,8 +100,8 @@ AfterAll {
     if ($null -ne $script:PrevOE) { [Console]::OutputEncoding = $script:PrevOE }
 }
 
-Describe 'run.ps1 integration — fake claude exit 99 (P2-1 短路)' {
-    It 'exit 99 时不得 commit，task.attempts=1，lastError 含 exit=99' {
+Describe 'run.ps1 integration — fake claude exit 99 (P2-1 短路 + P3-1 blocked exit 5)' {
+    It 'exit 99 时不得 commit，task.attempts=1，lastError 含 exit=99，进程 exit=5' {
         $sb = New-IntegSandbox
         New-FakeClaude -BinDir $sb.Bin -ExitCode 99
 
@@ -117,11 +117,16 @@ Describe 'run.ps1 integration — fake claude exit 99 (P2-1 短路)' {
         $t.attempts  | Should -Be 1
         $t.lastError | Should -Match 'exit=99'
         $t.blocked   | Should -Be $true
+
+        # P3-1：唯一 task 变 blocked 后第二轮 Select-NextTask 返回 null，
+        # 不应打印 "全部任务完成" + exit 0，而应 exit 5 + "no runnable tasks"
+        $r.ExitCode | Should -Be 5
+        $r.Output   | Should -Match 'no runnable tasks'
     }
 }
 
 Describe 'run.ps1 integration — fake claude exit 0 + 有效产物 (happy path)' {
-    It 'exit 0 且 task 更新合法时，run.ps1 生成新 commit' {
+    It 'exit 0 且 task 更新合法时，run.ps1 生成新 commit 且 exit=0' {
         $sb = New-IntegSandbox
         $side = @'
 $j = Get-Content '.devloop/task.json' -Raw | ConvertFrom-Json
@@ -135,6 +140,7 @@ $j | ConvertTo-Json -Depth 20 | Set-Content '.devloop/task.json' -Encoding utf8
         $after = [int](git -C $sb.Root rev-list --count HEAD).Trim()
 
         $after | Should -Be ($before + 1)
+        $r.ExitCode | Should -Be 0
 
         $data = Get-Content (Join-Path $sb.Root '.devloop/task.json') -Raw | ConvertFrom-Json
         $t = $data.tasks | Where-Object { $_.id -eq 'T-001' } | Select-Object -First 1
