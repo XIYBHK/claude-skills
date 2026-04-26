@@ -87,7 +87,43 @@ if ([string]$currentTask.notes -match 'CR-6:[^\r\n]*有') {
     }
 }
 
-# === 9. verify_cmds 复验 ===
+# === 9. task.json 结构防篡改 (P0-2) ===
+# 对比当前 task.json 与 HEAD:.devloop/task.json：
+#   a) tasks 数组长度未缩短（禁止删 task）
+#   b) 任一 task 的 id 没丢失（禁止改 id）
+#   c) 任一 task 的 verify_cmds 没变空（禁止空验证）
+# 首次 commit (HEAD 无 task.json) → 跳过（repo 初始化场景）
+$headTaskJson = git show "HEAD:.devloop/task.json" 2>$null
+if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($headTaskJson)) {
+    $headData = $headTaskJson | ConvertFrom-Json
+    $headById = @{}
+    foreach ($t in $headData.tasks) { $headById[$t.id] = $t }
+    $currById = @{}
+    foreach ($t in $data.tasks) { $currById[$t.id] = $t }
+
+    if ($data.tasks.Count -lt $headData.tasks.Count) {
+        Write-Error "guard_commit: task.json 任务数被缩短（$($headData.tasks.Count) → $($data.tasks.Count)），禁止删除 task"
+        exit 1
+    }
+    foreach ($headId in $headById.Keys) {
+        if (-not $currById.ContainsKey($headId)) {
+            Write-Error "guard_commit: task id '$headId' 在当前版本中丢失，禁止删除或改 id"
+            exit 1
+        }
+        $headTask = $headById[$headId]
+        $currTask = $currById[$headId]
+        $headCmdsProp = $headTask.PSObject.Properties['verify_cmds']
+        $currCmdsProp = $currTask.PSObject.Properties['verify_cmds']
+        $headHadCmds = ($null -ne $headCmdsProp) -and ($null -ne $headCmdsProp.Value) -and (@($headCmdsProp.Value).Count -gt 0)
+        $currHasCmds = ($null -ne $currCmdsProp) -and ($null -ne $currCmdsProp.Value) -and (@($currCmdsProp.Value).Count -gt 0)
+        if ($headHadCmds -and -not $currHasCmds) {
+            Write-Error "guard_commit: task '$headId' 的 verify_cmds 被清空，禁止"
+            exit 1
+        }
+    }
+}
+
+# === 10. verify_cmds 复验 ===
 $libPath = Join-Path $PSScriptRoot 'lib/verify_runner.ps1'
 if (-not (Test-Path $libPath)) {
     Write-Error "guard_commit: 缺 verify_runner.ps1 （预期路径：$libPath）"

@@ -102,3 +102,63 @@ Describe 'guard_commit.ps1 - enforcement gates' {
         } finally { Pop-Location }
     }
 }
+
+Describe 'guard_commit.ps1 - task.json diff protection (P0-2)' {
+    BeforeEach {
+        $script:SB = New-SandboxDir
+        New-Item -ItemType Directory -Force -Path (Join-Path $script:SB '.devloop/logs') | Out-Null
+        $libDst = Join-Path $script:SB '.devloop/scripts/lib'
+        New-Item -ItemType Directory -Force -Path $libDst | Out-Null
+        Copy-Item (Join-Path (Split-Path $script:ScriptPath) 'lib/verify_runner.ps1') $libDst
+        Copy-Item $script:ScriptPath (Join-Path $script:SB '.devloop/scripts/guard_commit.ps1')
+        Set-Content -Path (Join-Path $script:SB '.devloop/.current_task_id') -Value 'T-001' -NoNewline -Encoding ascii
+        Set-Content -Path (Join-Path $script:SB '.devloop/logs/task_T-001_research.md') -Value '# research' -Encoding utf8
+        Set-Content -Path (Join-Path $script:SB '.devloop/config.json') -Value '{"verify":{"globalCmds":["exit 0"]}}' -Encoding utf8
+        $notes = 'CR-6: 超出描述=无 / 过度抽象=无 / 更简替代=无'
+        $script:BaselineJson = @{ schemaVersion='1.0'; project=@{name='x';mainBranch='main';createdAt='2026-04-26T00:00:00Z';lastRunAt=$null}; tasks=@(
+            @{id='T-001';title='x';description='';steps=@();estimated_files=1;depends_on=@();category='feat';scope='p';verify_cmds=@('exit 0');passes=$true;attempts=1;blocked=$false;blockReason='';lastError='';notes=$notes;startedAt=$null;completedAt=$null},
+            @{id='T-002';title='y';description='';steps=@();estimated_files=1;depends_on=@();category='feat';scope='p';verify_cmds=@('exit 0');passes=$false;attempts=0;blocked=$false;blockReason='';lastError='';notes='';startedAt=$null;completedAt=$null}
+        ) } | ConvertTo-Json -Depth 10
+        Set-Content -Path (Join-Path $script:SB '.devloop/task.json') -Value $script:BaselineJson -Encoding utf8
+        Push-Location $script:SB
+        try {
+            git init -q --initial-branch=main 2>&1 | Out-Null
+            git config user.email 'test@example.com'
+            git config user.name 'test'
+            git add .devloop 2>&1 | Out-Null
+            git commit -q -m 'baseline' 2>&1 | Out-Null
+        } finally { Pop-Location }
+    }
+
+    It 'baseline 未改动时通过' {
+        Push-Location $script:SB
+        try {
+            $out = '{"tool_input":{"command":"git commit -m x"}}' | & pwsh -NoProfile -File '.devloop/scripts/guard_commit.ps1' 2>&1
+            $LASTEXITCODE | Should -Be 0
+        } finally { Pop-Location }
+    }
+
+    It '删除 task 被拒' {
+        $shortened = $script:BaselineJson | ConvertFrom-Json
+        $shortened.tasks = @($shortened.tasks[0])
+        $shortened | ConvertTo-Json -Depth 10 | Set-Content -Path (Join-Path $script:SB '.devloop/task.json') -Encoding utf8
+        Push-Location $script:SB
+        try {
+            $out = '{"tool_input":{"command":"git commit -m x"}}' | & pwsh -NoProfile -File '.devloop/scripts/guard_commit.ps1' 2>&1
+            $LASTEXITCODE | Should -Not -Be 0
+            ($out | Out-String) | Should -Match '缩短|丢失'
+        } finally { Pop-Location }
+    }
+
+    It '清空 verify_cmds 被拒' {
+        $tampered = $script:BaselineJson | ConvertFrom-Json
+        $tampered.tasks[0].verify_cmds = @()
+        $tampered | ConvertTo-Json -Depth 10 | Set-Content -Path (Join-Path $script:SB '.devloop/task.json') -Encoding utf8
+        Push-Location $script:SB
+        try {
+            $out = '{"tool_input":{"command":"git commit -m x"}}' | & pwsh -NoProfile -File '.devloop/scripts/guard_commit.ps1' 2>&1
+            $LASTEXITCODE | Should -Not -Be 0
+            ($out | Out-String) | Should -Match 'verify_cmds'
+        } finally { Pop-Location }
+    }
+}
