@@ -3,6 +3,7 @@
 # 单元测试：tests/claude_invoker.Tests.ps1（仅测 Build-Prompt）
 
 Set-StrictMode -Version 3.0
+$ErrorActionPreference = 'Stop'
 
 function Build-Prompt {
     [CmdletBinding()]
@@ -49,12 +50,15 @@ function Invoke-HeadlessClaude {
     $job = Start-Job -ScriptBlock {
         param($p, $log)
         $p | & claude -p --dangerously-skip-permissions --output-format json 2>&1 |
-            Tee-Object -FilePath $log
+            Tee-Object -FilePath $log | Out-Null
         return $LASTEXITCODE
     } -ArgumentList $Prompt, $LogPath
 
     $completed = Wait-Job -Job $job -Timeout $TimeoutSec
     if (-not $completed) {
+        # KNOWN (v0.1): Stop-Job terminates the PS job host but on Windows
+        # the child claude process may be orphaned and continue running until
+        # its own timeout. Tracked for v0.2 (use System.Diagnostics.Process).
         Stop-Job -Job $job
         Remove-Job -Job $job -Force
         Add-Content -Path $LogPath -Value "`n[TIMEOUT] killed after $TimeoutSec s"

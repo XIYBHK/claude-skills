@@ -33,4 +33,9 @@ Describe 'Build-Prompt' {
         $p = Build-Prompt -TaskId 'T-001' -Attempt 1
         $p | Should -Match 'RUN\.md'
     }
+
+    It 'attempt>1 但 PrevLogPath 为空时不含上次日志引用' {
+        $p = Build-Prompt -TaskId 'T-001' -Attempt 2
+        $p | Should -Not -Match 'Previous error log'
+    }
 }
