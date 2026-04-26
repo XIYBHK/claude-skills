@@ -92,6 +92,7 @@ Describe 'guard_commit.ps1 - enforcement gates' {
         $libDst = Join-Path $script:SB '.devloop/scripts/lib'
         New-Item -ItemType Directory -Force -Path $libDst | Out-Null
         Copy-Item (Join-Path (Split-Path $script:ScriptPath) 'lib/verify_runner.ps1') $libDst
+        Copy-Item (Join-Path (Split-Path $script:ScriptPath) 'lib/gate_runner.ps1') $libDst
         # guard_commit 自身也复制到 sandbox 以便相对路径 dot-source lib
         Copy-Item $script:ScriptPath (Join-Path $script:SB '.devloop/scripts/guard_commit.ps1')
         # 用 sandbox 内的 guard 跑
@@ -110,6 +111,7 @@ Describe 'guard_commit.ps1 - task.json diff protection (P0-2)' {
         $libDst = Join-Path $script:SB '.devloop/scripts/lib'
         New-Item -ItemType Directory -Force -Path $libDst | Out-Null
         Copy-Item (Join-Path (Split-Path $script:ScriptPath) 'lib/verify_runner.ps1') $libDst
+        Copy-Item (Join-Path (Split-Path $script:ScriptPath) 'lib/gate_runner.ps1') $libDst
         Copy-Item $script:ScriptPath (Join-Path $script:SB '.devloop/scripts/guard_commit.ps1')
         Set-Content -Path (Join-Path $script:SB '.devloop/.current_task_id') -Value 'T-001' -NoNewline -Encoding ascii
         Set-Content -Path (Join-Path $script:SB '.devloop/logs/task_T-001_research.md') -Value '# research' -Encoding utf8

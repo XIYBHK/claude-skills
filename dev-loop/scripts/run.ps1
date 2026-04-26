@@ -18,6 +18,7 @@ $libDir = Join-Path $PSScriptRoot 'lib'
 . (Join-Path $libDir 'task_picker.ps1')
 . (Join-Path $libDir 'verify_runner.ps1')
 . (Join-Path $libDir 'claude_invoker.ps1')
+. (Join-Path $libDir 'gate_runner.ps1')
 
 # === 前置 guards ===
 function Assert-GitClean {
@@ -187,6 +188,15 @@ while ($true) {
         Update-TaskField -Id $task.id -Fields @{
             attempts  = $attempt
             lastError = Get-LastError -LogPath $logPath
+        }
+    }
+
+    # P1-1: commit 前走完整 CR gate（原先只靠 verify_cmds，其他 gate 全靠
+    # guard_commit hook 拦 Claude 的 Bash，而 run.ps1 这条自动路径完全绕过）
+    if ($verified) {
+        if (-not (Test-DevLoopGates -Cwd '.')) {
+            Write-Error "gate check failed for task $($task.id)"
+            $verified = $false
         }
     }
 
