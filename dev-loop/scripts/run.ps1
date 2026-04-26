@@ -182,7 +182,8 @@ while ($true) {
         $verified = Invoke-VerifyRunner -Task $task -Config $cfg
         if ($verified) { break }
 
-        # 2f. 失败 -> 回滚工作区 + 记录 lastError
+        # 2f. 失败 -> 回滚 index + 工作区 + 未跟踪文件，记录 lastError (P1-2)
+        git restore --staged . *>&1 | Out-Null
         git restore . *>&1 | Out-Null
         git clean -fd *>&1 | Out-Null
         Update-TaskField -Id $task.id -Fields @{
@@ -204,13 +205,21 @@ while ($true) {
     Remove-Item '.devloop/.current_task_id' -ErrorAction SilentlyContinue
 
     # === 结果判定 ===
+    # P1-2: 事务顺序纠正。原顺序 commit → update → progress 导致 HEAD 永
+    # 远滞后一拍，下轮冷启动时 task.json 里 passes=false 但代码已 commit。
+    # 新顺序：先更新状态 → 后 git add -A → commit。HEAD 永远反映最新 clean
+    # state，对齐《effective harnesses》原文。
     $ts = Get-Date -Format 'HH:mm'
     if ($verified) {
+        Update-TaskField -Id $task.id -Fields @{ passes = $true; completedAt = (Get-Date).ToString('o') }
+        Append-Progress "| $ts | $($task.id) | $($task.title) | ✓ done | $($task.attempts) | — |"
         git add -A
         $msg = Build-CommitMessage -Task $task -Config $cfg
         git commit -m $msg | Out-Null
-        Update-TaskField -Id $task.id -Fields @{ passes = $true; completedAt = (Get-Date).ToString('o') }
-        Append-Progress "| $ts | $($task.id) | $($task.title) | ✓ done | $($task.attempts) | — |"
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "git commit failed for task $($task.id) (exit=$LASTEXITCODE)"
+            exit 4
+        }
         $consecBlocked = 0
         $done++
     }
