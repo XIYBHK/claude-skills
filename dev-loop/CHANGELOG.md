@@ -1,5 +1,31 @@
 # Dev-Loop Skill Changelog
 
+## v0.1.6 (2026-04-26)
+
+小型工程化收敛，v0.1 系列闭环：
+
+- **P5-1/2/3** 抽出 `Exit-WithError` 薄 helper 替换 v0.1.5 的 11 处
+  `[Console]::Error.WriteLine + exit N` 重复。helper 形态严格保持：
+  ```powershell
+  function Exit-WithError {
+      param([Parameter(Mandatory)][int]$Code, [Parameter(Mandatory)][string]$Message)
+      [Console]::Error.WriteLine($Message)
+      exit $Code
+  }
+  ```
+  **故意不抽到 lib**——`run.ps1` / `guard_commit.ps1` / `browser_verify.ps1`
+  各维护一份内联副本。理由：guard_commit 作为 PreToolUse hook 独立
+  pwsh 进程；browser_verify 可被 `verify_cmds` 独立调用；内联保证
+  helper 加载失败不会多出一个"缺 lib"故障点。
+- **P5-4** 补 exit 4 集成测试：pre-commit hook 强制 exit 1，让 gate 全
+  通过的 happy path 在 `git commit` 环节真实失败，实证 run.ps1 exit 4
+  路径可达（v0.1.5 因触发代价评估"留给真实烟雾测"）。
+- **P5-5** README 新增 `## 发布流程` 小节，把发版 checklist 正式化：
+  annotated tag、FF merge、分支清理 + **强制** `git ls-remote` 远端核验
+  步骤，避免"本地 tracking ref 对但远端实际漂移"。
+
+Pester: **58/58**（v0.1.5 的 57 + exit 4）。
+
 ## v0.1.5 (2026-04-26)
 
 把 v0.1.4 留下的"`Write-Error; exit N` 隐性 exit 1 化"问题全面清理：

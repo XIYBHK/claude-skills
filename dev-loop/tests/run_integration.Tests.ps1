@@ -176,6 +176,29 @@ Describe 'run.ps1 integration — 连续 blocked 达阈值 (P4-1 exit 2)' {
     }
 }
 
+Describe 'run.ps1 integration — pre-commit hook 阻断 git commit (P5-4 exit 4)' {
+    It 'gate 通过但 pre-commit hook exit 1 时，run.ps1 应 exit 4' {
+        $sb = New-IntegSandbox
+        $side = @'
+$j = Get-Content '.devloop/task.json' -Raw | ConvertFrom-Json
+$j.tasks[0].passes = $true
+$j | ConvertTo-Json -Depth 20 | Set-Content '.devloop/task.json' -Encoding utf8
+'@
+        New-FakeClaude -BinDir $sb.Bin -ExitCode 0 -SideEffectScript $side
+
+        # 装 pre-commit hook 强制 exit 1：gate 已通过但 git commit 会失败
+        $hookDir = Join-Path $sb.Root '.git/hooks'
+        $hookPath = Join-Path $hookDir 'pre-commit'
+        # Windows + Git for Windows 用 sh 执行 hook（hook 必须无 .sh 扩展名）
+        Set-Content -Path $hookPath -Value "#!/bin/sh`nexit 1`n" -Encoding ascii -NoNewline
+
+        $r = Invoke-RunPs1 -Cwd $sb.Root -BinDir $sb.Bin
+
+        $r.ExitCode | Should -Be 4
+        $r.Output   | Should -Match 'git commit failed'
+    }
+}
+
 Describe 'run.ps1 integration — fake claude exit 0 + 有效产物 (happy path)' {
     It 'exit 0 且 task 更新合法时，run.ps1 生成新 commit 且 exit=0' {
         $sb = New-IntegSandbox

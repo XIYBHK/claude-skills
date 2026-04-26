@@ -14,6 +14,15 @@ $ErrorActionPreference = 'Stop'
 # 静默失败。强制 UTF-8 让所有调用方看到真实消息。
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
+# P5-2: 薄 helper。本脚本作为 PreToolUse hook 被独立 pwsh 进程调起，
+# 为避免 lib 加载失败多一个失败点，helper 内联；run.ps1 / browser_verify.ps1
+# 各自也维护相同形态的本地副本。
+function Exit-WithError {
+    param([Parameter(Mandatory)][int]$Code, [Parameter(Mandatory)][string]$Message)
+    [Console]::Error.WriteLine($Message)
+    exit $Code
+}
+
 # === 1. 读 stdin hook 协议 ===
 $stdin = [Console]::In.ReadToEnd()
 if ([string]::IsNullOrWhiteSpace($stdin)) { exit 0 }
@@ -56,10 +65,7 @@ if ($cmd -match '\[skip-devloop\]') {
 #   - run.ps1 自动路径：主循环 commit 前调
 $gateRunnerPath = Join-Path $PSScriptRoot 'lib/gate_runner.ps1'
 if (-not (Test-Path $gateRunnerPath)) {
-    # P4-2: Stop 模式下 Write-Error 会 throw → 巧合也是 exit 1，但语义应是
-    # "hook 显式拒绝"而非"脚本挂了"。统一走 stderr + 显式 exit。
-    [Console]::Error.WriteLine("guard_commit: 缺 gate_runner.ps1 （预期路径：$gateRunnerPath）")
-    exit 1
+    Exit-WithError -Code 1 -Message "guard_commit: 缺 gate_runner.ps1 （预期路径：$gateRunnerPath）"
 }
 . $gateRunnerPath
 if (-not (Test-DevLoopGates -Cwd '.')) {
@@ -74,19 +80,16 @@ $currentTask = $data.tasks | Where-Object { $_.id -eq $taskId } | Select-Object 
 
 $libPath = Join-Path $PSScriptRoot 'lib/verify_runner.ps1'
 if (-not (Test-Path $libPath)) {
-    [Console]::Error.WriteLine("guard_commit: 缺 verify_runner.ps1 （预期路径：$libPath）")
-    exit 1
+    Exit-WithError -Code 1 -Message "guard_commit: 缺 verify_runner.ps1 （预期路径：$libPath）"
 }
 . $libPath
 $configPath = '.devloop/config.json'
 if (-not (Test-Path $configPath)) {
-    [Console]::Error.WriteLine('guard_commit: 缺 .devloop/config.json')
-    exit 1
+    Exit-WithError -Code 1 -Message 'guard_commit: 缺 .devloop/config.json'
 }
 $config = Get-Content $configPath -Raw | ConvertFrom-Json
 if (-not (Invoke-VerifyRunner -Task $currentTask -Config $config)) {
-    [Console]::Error.WriteLine('guard_commit: verify_cmds 复验失败，拒绝提交')
-    exit 1
+    Exit-WithError -Code 1 -Message 'guard_commit: verify_cmds 复验失败，拒绝提交'
 }
 
 exit 0

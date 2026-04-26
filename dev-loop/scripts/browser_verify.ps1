@@ -20,11 +20,16 @@ param(
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 
+# P5-3: 薄 helper。本脚本可被 verify_cmds 独立调用，与 run.ps1 / guard_commit.ps1
+# 维护独立副本以避免对 lib 的隐式依赖。
+function Exit-WithError {
+    param([Parameter(Mandatory)][int]$Code, [Parameter(Mandatory)][string]$Message)
+    [Console]::Error.WriteLine($Message)
+    exit $Code
+}
+
 if (-not (Test-Path $ConfigPath)) {
-    # P4-3: Stop 模式下 Write-Error 会 throw → 巧合也是 exit 1 但语义混淆。
-    # 统一走 stderr + 显式 exit，让消息和退出码都走"显式拒绝"路径。
-    [Console]::Error.WriteLine("browser_verify: 缺 $ConfigPath")
-    exit 1
+    Exit-WithError -Code 1 -Message "browser_verify: 缺 $ConfigPath"
 }
 $cfg = Get-Content $ConfigPath -Raw | ConvertFrom-Json
 
@@ -66,8 +71,7 @@ if (-not (Test-Path $screenshotDir)) {
 # 预检：npx 可用？
 $null = Get-Command npx -ErrorAction SilentlyContinue
 if (-not $?) {
-    [Console]::Error.WriteLine('browser_verify: 未找到 npx。请装 Node.js 和 @playwright/test，或关闭 verify.browserTests.enabled')
-    exit 1
+    Exit-WithError -Code 1 -Message 'browser_verify: 未找到 npx。请装 Node.js 和 @playwright/test，或关闭 verify.browserTests.enabled'
 }
 
 # 生成临时 Playwright 脚本
@@ -150,8 +154,7 @@ $code = $LASTEXITCODE
 Remove-Item $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
 
 if ($code -ne 0) {
-    # P4-3: 确保 exit $code（非零）语义可达，而不是被 Stop 吞成 exit 1
-    [Console]::Error.WriteLine("browser_verify: 失败 (exit=$code)")
-    exit $code
+    # 注意：非 exit 1，保留 Playwright 原始退出码转发
+    Exit-WithError -Code $code -Message "browser_verify: 失败 (exit=$code)"
 }
 exit 0

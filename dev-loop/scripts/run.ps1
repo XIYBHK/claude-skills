@@ -95,6 +95,16 @@ function Get-LastError {
     return ($lines -join "`n")
 }
 
+# P5-1: 薄 helper。$ErrorActionPreference='Stop' 下 Write-Error 会 throw 让
+# exit N 不可达，统一用 stderr 直写 + exit。故意不塞业务前缀、不抽 lib——
+# guard_commit / browser_verify 也各自内联一份相同形态，避免可独立执行脚本
+# 因缺 lib 多出失败点。
+function Exit-WithError {
+    param([Parameter(Mandatory)][int]$Code, [Parameter(Mandatory)][string]$Message)
+    [Console]::Error.WriteLine($Message)
+    exit $Code
+}
+
 # P1-4: 从 config.limits.<Name> 读 int，缺字段 → $Default（StrictMode-safe）
 function Get-CfgLimit {
     param($Config, [string]$Name, [int]$Default)
@@ -158,10 +168,7 @@ while ($true) {
         $blocked = @($all | Where-Object { $_.blocked }).Count
         $pending = @($all | Where-Object { -not $_.passes -and -not $_.blocked }).Count
         if ($blocked -gt 0 -or $pending -gt 0) {
-            # 直接写 stderr 绕开 $ErrorActionPreference='Stop' 下 Write-Error 会
-            # 抛异常让进程以 exit 1 终止、永远跑不到 exit 5 的问题。
-            [Console]::Error.WriteLine("no runnable tasks: blocked=$blocked pending=$pending")
-            exit 5
+            Exit-WithError -Code 5 -Message "no runnable tasks: blocked=$blocked pending=$pending"
         }
         Write-Host '✓ 全部任务完成'
         break
@@ -183,10 +190,7 @@ while ($true) {
     try {
         Invoke-InitCmds -Config $cfg
     } catch {
-        # P4-1: 原 Write-Error 在 $ErrorActionPreference='Stop' 下会 throw，
-        # 让进程以 exit 1 终止、永远跑不到 exit 3。改走 stderr 直写确保 exit 码。
-        [Console]::Error.WriteLine("harness precondition failed: $_")
-        exit 3
+        Exit-WithError -Code 3 -Message "harness precondition failed: $_"
     }
 
     $verified = $false
@@ -249,8 +253,7 @@ while ($true) {
     # guard_commit hook 拦 Claude 的 Bash，而 run.ps1 这条自动路径完全绕过）
     if ($verified) {
         if (-not (Test-DevLoopGates -Cwd '.')) {
-            # P4-1: 原 Write-Error 在 Stop 模式下 throw，$verified=$false 跑不到、
-            # 主循环直接 exit 1；blocked 分支被吞。stderr 直写避开。
+            # 注意：此处不 exit，只写日志+降级到 blocked 分支，所以不走 helper
             [Console]::Error.WriteLine("gate check failed for task $($task.id)")
             $verified = $false
         }
@@ -272,9 +275,7 @@ while ($true) {
         $msg = Build-CommitMessage -Task $task -Config $cfg
         git commit -m $msg | Out-Null
         if ($LASTEXITCODE -ne 0) {
-            # P4-1: 同上，确保 exit 4 语义可达
-            [Console]::Error.WriteLine("git commit failed for task $($task.id) (exit=$LASTEXITCODE)")
-            exit 4
+            Exit-WithError -Code 4 -Message "git commit failed for task $($task.id) (exit=$LASTEXITCODE)"
         }
         $consecBlocked = 0
         $done++
@@ -285,9 +286,7 @@ while ($true) {
         Append-Progress "| $ts | $($task.id) | $($task.title) | ✗ blocked | $MaxAttemptsPerTask | $reason |"
         $consecBlocked++
         if ($consecBlocked -ge $MaxConsecBlocked) {
-            # P4-1: 同上，确保 exit 2 可达
-            [Console]::Error.WriteLine("连续 $MaxConsecBlocked 个任务 blocked，整体停止")
-            exit 2
+            Exit-WithError -Code 2 -Message "连续 $MaxConsecBlocked 个任务 blocked，整体停止"
         }
     }
 

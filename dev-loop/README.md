@@ -46,3 +46,21 @@ v0.2+ 扩展见 `references/ROADMAP.md`。
 - [设计规格](docs/specs/2026-04-26-dev-loop-skill-design.md) — 完整架构与决策理由
 - [实施计划](docs/plans/2026-04-26-dev-loop-skill.md) — 按任务执行顺序
 - [CHANGELOG](CHANGELOG.md) — 版本变更
+
+## 发布流程
+
+本 skill 的 patch/minor release 走固定流程，避免"看起来推上去了但实际没"的漂移：
+
+1. `dev-loop-vX.Y.Z-patch` 分支起自最新 `main`，完整改动 + 对应 Pester 新增/加强
+2. `Invoke-Pester -Path tests`：必须全绿；记录 Pass/Fail 数入 CHANGELOG
+3. `git tag -a dev-loop-vX.Y.Z -m "..."` 统一用 annotated tag（与历史 v0.1.0/0.1.1/0.1.2/0.1.4+ 一致）
+4. `git push -u origin dev-loop-vX.Y.Z-patch && git push origin dev-loop-vX.Y.Z`
+5. `git checkout main && git merge --ff-only dev-loop-vX.Y.Z-patch && git push origin main`
+6. 清理分支：`git branch -d dev-loop-vX.Y.Z-patch && git push origin --delete dev-loop-vX.Y.Z-patch`
+7. **远端核验（非可选）**：
+   ```bash
+   git fetch origin --tags --prune
+   git ls-remote --heads --tags origin main 'refs/tags/dev-loop-v*'
+   git cat-file -t dev-loop-vX.Y.Z    # 期望 'tag'（annotated），不应为 'commit'（lightweight）
+   ```
+   若 `git ls-remote` 因网络临时失败，稍后重试直至成功；不可跳过。
