@@ -76,6 +76,21 @@ Describe 'Assert-DevLoopInitialized' {
     }
 }
 
+Describe 'Get-CfgLimit (P1-4)' {
+    It '缺 limits 返回默认' {
+        $cfg = '{"verify":{"globalCmds":[]}}' | ConvertFrom-Json
+        Get-CfgLimit $cfg 'maxAttemptsPerTask' 3 | Should -Be 3
+    }
+    It '有 limits 但缺对应字段返回默认' {
+        $cfg = '{"limits":{"other":42}}' | ConvertFrom-Json
+        Get-CfgLimit $cfg 'maxAttemptsPerTask' 3 | Should -Be 3
+    }
+    It '字段存在返回 config 值' {
+        $cfg = '{"limits":{"maxAttemptsPerTask":7}}' | ConvertFrom-Json
+        Get-CfgLimit $cfg 'maxAttemptsPerTask' 3 | Should -Be 7
+    }
+}
+
 Describe 'Invoke-InitCmds (P0-1)' {
     It '缺 init 字段直接返回不抛异常' {
         $cfg = '{"verify":{"globalCmds":[]},"limits":{"maxFilesPerTask":5}}' | ConvertFrom-Json

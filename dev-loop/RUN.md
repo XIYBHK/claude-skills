@@ -5,9 +5,11 @@
 ## 1. 必读清单（冷启动上下文重建）
 
 按顺序读取：
+- `git log --oneline -20` → 查看最近 20 次提交，理解项目近期轨迹与 HEAD 状态
 - `.devloop/task.json` → 定位 id=`<TASK_ID>` 的任务
 - `architecture.md` → 项目架构与 [A/B/C] 证据等级
 - `CLAUDE.md` → 工作流规则
+- `.devloop/progress.md` → 过往任务的完成/阻塞轨迹
 - `.devloop/lessons.md` → 历史避坑经验（必读）
 - `.devloop/logs/task_<TASK_ID>_attempt_<N-1>.log`（若 attempt > 1）
 

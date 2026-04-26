@@ -4,8 +4,9 @@
 [CmdletBinding()]
 param(
     [int]$MaxTasks = 0,
-    [int]$MaxConsecBlocked = 3,
-    [int]$MaxAttemptsPerTask = 3,
+    # P1-4: -1 表示 "未指定，从 config.limits.* 读取"。CLI 显式传正值则覆盖 config。
+    [int]$MaxConsecBlocked = -1,
+    [int]$MaxAttemptsPerTask = -1,
     [switch]$DryRun,
     [switch]$LoadFunctionsOnly     # 测试钩子：只 dot-source 函数定义
 )
@@ -94,6 +95,16 @@ function Get-LastError {
     return ($lines -join "`n")
 }
 
+# P1-4: 从 config.limits.<Name> 读 int，缺字段 → $Default（StrictMode-safe）
+function Get-CfgLimit {
+    param($Config, [string]$Name, [int]$Default)
+    $limitsProp = $Config.PSObject.Properties['limits']
+    if ($null -eq $limitsProp -or $null -eq $limitsProp.Value) { return $Default }
+    $p = $limitsProp.Value.PSObject.Properties[$Name]
+    if ($null -eq $p -or $null -eq $p.Value) { return $Default }
+    return [int]$p.Value
+}
+
 # P0-1: session-start smoke。对齐前作 init.sh 语义：
 # 每任务进入 attempt loop 前跑 config.init.cmds 做项目健康度检查，
 # 任一失败 → throw，主循环捕获后 exit 3 (harness precondition failed)。
@@ -126,6 +137,11 @@ Assert-DevLoopInitialized
 Assert-TaskJsonValid -Path '.devloop/task.json' -MaxFiles 5
 
 $cfg = Get-Content '.devloop/config.json' -Raw | ConvertFrom-Json
+
+# P1-4: CLI 参数未指定时从 config.limits.* 读取（Get-CfgLimit 定义在上方）
+if ($MaxAttemptsPerTask -lt 0) { $MaxAttemptsPerTask = Get-CfgLimit $cfg 'maxAttemptsPerTask' 3 }
+if ($MaxConsecBlocked   -lt 0) { $MaxConsecBlocked   = Get-CfgLimit $cfg 'maxConsecBlocked' 3 }
+
 $consecBlocked = 0
 $done = 0
 
