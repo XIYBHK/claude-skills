@@ -58,7 +58,18 @@
 
 ## 段 4：配套文件 + CR-4 命令验证
 
-一次性生成：
+**v0.1.2 起**：Claude 只产出一份 `.devloop/init/payload.json`（段 1-3 的结构化汇总），具体文件拷贝/占位符替换/`.gitignore` 追加/`browserTests` 映射等**全部由 `scripts/materialize.ps1` 确定性完成**。
+
+```powershell
+pwsh -File ~/.claude/skills/dev-loop/scripts/materialize.ps1 `
+     -InitPayload .devloop/init/payload.json `
+     -ProjectRoot .
+```
+
+`payload.json` schema 见 `scripts/materialize.ps1` 顶部注释块，字段：
+- `project` / `q3` / `context7Available` / `architectureMd` / `tasks`
+
+落盘产物（由脚本一次性生成）：
 
 | 生成物 | 来源 |
 |---|---|
