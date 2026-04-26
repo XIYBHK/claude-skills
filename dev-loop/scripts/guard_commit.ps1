@@ -8,6 +8,12 @@ param()
 
 $ErrorActionPreference = 'Stop'
 
+# P2-8: 固定 UTF-8 输出。非中文英文 Windows 默认 Console.OutputEncoding 为
+# gb2312 等 OEM codepage，中文 Write-Error 消息穿过 stderr pipe 到调用方
+# （Claude Code hook / Pester）时 UTF-16 字符被错码映射成形近字，正则断言
+# 静默失败。强制 UTF-8 让所有调用方看到真实消息。
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 # === 1. 读 stdin hook 协议 ===
 $stdin = [Console]::In.ReadToEnd()
 if ([string]::IsNullOrWhiteSpace($stdin)) { exit 0 }

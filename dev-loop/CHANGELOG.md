@@ -1,5 +1,39 @@
 # Dev-Loop Skill Changelog
 
+## v0.1.3 (2026-04-26)
+
+用户本机实测发现 4 条 v0.1.2 遗留洞 + 1 条中文 Windows 环境兼容 bug：
+
+- **P2-1** `run.ps1` — `Invoke-HeadlessClaude` 返回的 `$exitCode` 被读出
+  后从未检查。Claude 进程崩溃/超时/被 kill 时 `verify_cmds` 仍可能意外
+  过关（如测试命令是 `exit 0`）导致误提交。新增：非零 exit 立即回滚
+  工作区、写 `lastError` 含 `exit=N`、`continue` 进下一 attempt。
+- **P2-2** `scripts/materialize.ps1` — `-InitPayload` 指向默认目标路径
+  `.devloop/init/payload.json` 时 `Copy-Item -Force` 抛 "Cannot overwrite
+  ... with itself"。加 `src==dst` 绝对路径比较，同路径跳过拷贝。
+- **P2-3** `run.ps1` — P1-4 声称"消费 `config.limits.*`"但 `maxFilesPerTask`
+  仍硬编码 `5`。把 `$cfg` 读取提前到 `Assert-TaskJsonValid` 之前，接入
+  `Get-CfgLimit $cfg 'maxFilesPerTask' 5`。
+- **P2-4** `run.ps1` — `-DryRun` 默认 `MaxTasks=0` 时 `Select-NextTask` 永
+  远返回同一个 task，死循环。改为 `MaxTasks <= 0` 时跑一轮即 break。
+- **P2-8** `scripts/lib/gate_runner.ps1` + `scripts/guard_commit.ps1` +
+  `tests/guard_commit.Tests.ps1` — 中文 Windows 默认 `[Console]::OutputEncoding`
+  为 gb2312，`git show HEAD:.devloop/task.json` 的 UTF-8 字节被误解成乱码 +
+  `?`，ConvertFrom-Json 抛 "unexpected character"，**G9 task.json diff
+  protection 在这类机器上整段静默失效**（"删除 task / 清空 verify_cmds"
+  都能过 gate）。修复：G9 前后 save/restore `[Console]::OutputEncoding = UTF-8`；
+  guard_commit 顶部固定 UTF-8 输出；测试 BeforeAll 亦同步。
+
+新增 Pester：
+- **P2-5** `tests/run_integration.Tests.ps1` — PATH-prepend 假 claude.cmd
+  跑完整 run.ps1：fake claude `exit 99` 必须不 commit、`attempts++`、
+  `lastError` 含 `exit=99`；fake claude `exit 0` + 合法 task.json 更新必须
+  真实生成 commit。P2-1 的 E2E 保障。
+- **P2-6** `tests/materialize.Tests.ps1` — `InitPayload` 指向默认 dst /
+  指向外部路径两个 case，覆盖 P2-2 自拷贝修复。
+
+Pester: **55/55**（v0.1.2 的 51 + run_integration 2 + materialize 2）。
+
 ## v0.1.2 (2026-04-26)
 
 用户基于原文再次反核验提出 6 项补丁，逐条修复。**P1-1/P1-2 是根本设计

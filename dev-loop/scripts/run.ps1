@@ -134,13 +134,16 @@ if ($LoadFunctionsOnly) { return }
 Assert-GitClean
 Assert-BranchNotMain
 Assert-DevLoopInitialized
-Assert-TaskJsonValid -Path '.devloop/task.json' -MaxFiles 5
 
+# P2-3: config 读取提前到 Assert-TaskJsonValid 之前，以便 maxFilesPerTask 也能被 config.limits 覆盖
 $cfg = Get-Content '.devloop/config.json' -Raw | ConvertFrom-Json
 
-# P1-4: CLI 参数未指定时从 config.limits.* 读取（Get-CfgLimit 定义在上方）
+# P1-4 + P2-3: CLI 参数未指定时从 config.limits.* 读取（Get-CfgLimit 定义在上方）
 if ($MaxAttemptsPerTask -lt 0) { $MaxAttemptsPerTask = Get-CfgLimit $cfg 'maxAttemptsPerTask' 3 }
 if ($MaxConsecBlocked   -lt 0) { $MaxConsecBlocked   = Get-CfgLimit $cfg 'maxConsecBlocked' 3 }
+$maxFilesPerTask = Get-CfgLimit $cfg 'maxFilesPerTask' 5
+
+Assert-TaskJsonValid -Path '.devloop/task.json' -MaxFiles $maxFilesPerTask
 
 $consecBlocked = 0
 $done = 0
@@ -155,7 +158,9 @@ while ($true) {
     if ($DryRun) {
         Write-Host '[DryRun] 跳过 attempt 循环'
         $done++
-        if ($MaxTasks -gt 0 -and $done -ge $MaxTasks) { break }
+        # P2-4: DryRun 不改 task 状态，Select-NextTask 下一轮会选中同一任务 → 死循环。
+        # 未显式指定 -MaxTasks 时，默认只遍历一轮就退出。
+        if ($MaxTasks -le 0 -or $done -ge $MaxTasks) { break }
         continue
     }
 
@@ -189,6 +194,21 @@ while ($true) {
         $logPath = ".devloop/logs/task_$($task.id)_attempt_$attempt.log"
         $timeout = $cfg.limits.claudeTimeoutSec
         $exitCode = Invoke-HeadlessClaude -Prompt $prompt -LogPath $logPath -TimeoutSec $timeout
+
+        # P2-1: headless Claude 非零退出时短路本次 attempt。
+        # 原实现把 $exitCode 读出来却不检查，failure 路径完全依赖 verify_cmds
+        # "顺便跑失败"——但 Claude 进程崩溃/超时/被 kill 时 verify_cmds 仍可能
+        # 在半完成状态下意外为 true（如测试命令本身就是 `exit 0`）。
+        if ($exitCode -ne 0) {
+            git restore --staged . *>&1 | Out-Null
+            git restore . *>&1 | Out-Null
+            git clean -fd *>&1 | Out-Null
+            Update-TaskField -Id $task.id -Fields @{
+                attempts  = $attempt
+                lastError = "headless Claude failed (exit=$exitCode)`n$(Get-LastError -LogPath $logPath)"
+            }
+            continue
+        }
 
         # 2d. 重新载入 task（Claude 可能写过）
         $data = Get-Content '.devloop/task.json' -Raw | ConvertFrom-Json

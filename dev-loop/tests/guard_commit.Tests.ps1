@@ -1,4 +1,9 @@
 BeforeAll {
+    # P2-8: 中文 Windows 默认 Console.OutputEncoding 为 gb2312，会把子 pwsh 的
+    # 中文 Write-Error 映射为形近字（UTF-16 code point 不同），Should -Match 静默失败。
+    $script:PrevOE = [Console]::OutputEncoding
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
     $script:ScriptPath = (Resolve-Path (Join-Path $PSScriptRoot '../scripts/guard_commit.ps1')).Path
     $script:TmpBase    = Join-Path ([System.IO.Path]::GetTempPath()) "guard-$(Get-Random)"
     New-Item -ItemType Directory -Force -Path $script:TmpBase | Out-Null
@@ -21,6 +26,7 @@ BeforeAll {
 
 AfterAll {
     Remove-Item $script:TmpBase -Recurse -Force -ErrorAction SilentlyContinue
+    if ($null -ne $script:PrevOE) { [Console]::OutputEncoding = $script:PrevOE }
 }
 
 Describe 'guard_commit.ps1 - routing' {

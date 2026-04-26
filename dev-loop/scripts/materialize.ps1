@@ -121,7 +121,15 @@ if (Test-Path $gitIgnore) {
 }
 
 # === 9. 留痕 init payload 到 .devloop/init/ 供审计 ===
-Copy-Item $InitPayload (Join-Path $devloop 'init/payload.json') -Force
+# P2-2: 文档示例直接推荐 -InitPayload .devloop/init/payload.json，
+# 与本步目标路径一致时 Copy-Item -Force 会抛 "Cannot overwrite ... with itself"。
+# 比较 resolved 绝对路径，相同则跳过。
+$payloadDst = Join-Path $devloop 'init/payload.json'
+$srcFull = (Resolve-Path $InitPayload).Path
+$dstFull = [System.IO.Path]::GetFullPath($payloadDst)
+if ($srcFull -ne $dstFull) {
+    Copy-Item $InitPayload $payloadDst -Force
+}
 
 Write-Host "✓ materialize 完成"
 Write-Host "  项目根:        $ProjectRoot"

@@ -66,11 +66,17 @@ function Test-DevLoopGates {
     }
 
     # G9: task.json 结构防篡改（与 HEAD 比较）
+    # P2-8: 中文 Windows 下 [Console]::OutputEncoding 默认 gb2312，
+    # git show 的 UTF-8 字节被 pwsh 按 gb2312 解码 → 中文 notes 变 replacement char，
+    # ConvertFrom-Json 抛 "unexpected character"，整段 G9 被静默跳过，diff gate 形同虚设。
+    # 这里局部切到 UTF-8 再恢复，不触碰调用方外部环境。
     Push-Location $Cwd
+    $prevOE = [Console]::OutputEncoding
     try {
+        [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
         $headTaskJson = git show "HEAD:.devloop/task.json" 2>$null
         if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($headTaskJson)) {
-            $headData = $headTaskJson | ConvertFrom-Json
+            $headData = ($headTaskJson | Out-String) | ConvertFrom-Json
             $headById = @{}; foreach ($t in $headData.tasks) { $headById[$t.id] = $t }
             $currById = @{}; foreach ($t in $data.tasks) { $currById[$t.id] = $t }
 
@@ -93,7 +99,10 @@ function Test-DevLoopGates {
                 }
             }
         }
-    } finally { Pop-Location }
+    } finally {
+        [Console]::OutputEncoding = $prevOE
+        Pop-Location
+    }
 
     return $true
 }
