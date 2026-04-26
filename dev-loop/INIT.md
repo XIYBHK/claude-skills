@@ -72,7 +72,7 @@
 | `.devloop/progress.md` | 模板初始化为空 |
 | `.devloop/lessons.md` | 模板初始化为空 |
 
-### Q3 形态 → `browserTests` 默认映射（v0.1.1）
+### Q3 形态 → `browserTests` 默认映射（v0.1.1，v0.1.2 起真实实装）
 
 基于段 1 Q3 识别的项目形态，生成 `config.json` 时**必须**按下表设置 `verify.browserTests.enabled`：
 
@@ -83,7 +83,10 @@
 | UE 插件 / CLI / 库 | `false` | 无浏览器可测 |
 | 手动验证兜底 | `false` | 无法自动化 |
 
-UI 项目开 `browserTests.enabled=true` 时，必须同时填 `verify.browserTests.url` 和 `requiredSelectors` 至少 1 项（否则 `cmd_check.json` 标 fail）。
+UI 项目开 `browserTests.enabled=true` 时：
+1. 必须同时填 `verify.browserTests.url` 和 `requiredSelectors` 至少 1 项（否则 `cmd_check.json` 标 fail）
+2. 必须把 `pwsh -NoProfile -File .devloop/scripts/browser_verify.ps1` **追加到** `verify.globalCmds`（v0.1.2 起由 `scripts/browser_verify.ps1` 真实消费，详见 `references/browser-testing.md`）
+3. 用户项目须有 Node.js + `@playwright/test`（首次运行自动 `npx playwright install chromium`）
 
 **CR-4 自动触发**：对 `config.json` 每条命令做两类验证：
 
