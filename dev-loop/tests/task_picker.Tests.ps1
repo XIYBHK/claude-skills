@@ -22,6 +22,15 @@ Describe 'Select-NextTask' {
         Select-NextTask -Path $tmpJson | Should -BeNullOrEmpty
         Remove-Item $tmpJson
     }
+
+    It '任务缺 depends_on 属性时不崩溃（StrictMode 兼容）' {
+        $tmp = Join-Path ([System.IO.Path]::GetTempPath()) 'nodeps.json'
+        # 手动写 JSON 省略 depends_on 字段
+        $json = '{"schemaVersion":"1.0","project":{"name":"x","mainBranch":"main","createdAt":"2026-04-26T00:00:00Z","lastRunAt":null},"tasks":[{"id":"T-001","title":"","description":"","steps":[],"estimated_files":1,"category":"c","scope":"p","verify_cmds":["true"],"passes":false,"attempts":0,"blocked":false,"blockReason":"","lastError":"","notes":"","startedAt":null,"completedAt":null}]}'
+        Set-Content -Path $tmp -Value $json -Encoding utf8
+        { Select-NextTask -Path $tmp } | Should -Not -Throw
+        Remove-Item $tmp
+    }
 }
 
 Describe 'Assert-TaskJsonValid' {
@@ -38,5 +47,15 @@ Describe 'Assert-TaskJsonValid' {
     It '合法 fixture 静默通过' {
         { Assert-TaskJsonValid -Path (Join-Path $script:FixtureDir 'valid_task.json') -MaxFiles 5 } |
             Should -Not -Throw
+    }
+
+    It '对重复 task id 抛异常' {
+        $tmp = Join-Path ([System.IO.Path]::GetTempPath()) 'dup.json'
+        @{ schemaVersion='1.0'; project=@{name='x';mainBranch='main';createdAt='2026-04-26T00:00:00Z';lastRunAt=$null}; tasks=@(
+            @{id='T-001';title='';description='';steps=@();estimated_files=1;depends_on=@();category='c';scope='p';verify_cmds=@('true');passes=$false;attempts=0;blocked=$false;blockReason='';lastError='';notes='';startedAt=$null;completedAt=$null},
+            @{id='T-001';title='dup';description='';steps=@();estimated_files=1;depends_on=@();category='c';scope='p';verify_cmds=@('true');passes=$false;attempts=0;blocked=$false;blockReason='';lastError='';notes='';startedAt=$null;completedAt=$null}
+        ) } | ConvertTo-Json -Depth 10 | Set-Content $tmp
+        { Assert-TaskJsonValid -Path $tmp -MaxFiles 5 } | Should -Throw '*Duplicate*'
+        Remove-Item $tmp
     }
 }

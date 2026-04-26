@@ -5,6 +5,15 @@
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 
+# StrictMode 3.0 禁止访问不存在的属性, @() 也无法兜底 —— 因为内部表达式先求值才会被包装。
+# 这里走 PSObject.Properties 索引器，缺失时返回 $null，从而安全降级为 @()。
+function Get-TaskDependsOn {
+    param($Task)
+    $prop = $Task.PSObject.Properties['depends_on']
+    if ($null -eq $prop -or $null -eq $prop.Value) { return @() }
+    return @($prop.Value)
+}
+
 function Select-NextTask {
     [CmdletBinding()]
     param(
@@ -18,7 +27,7 @@ function Select-NextTask {
         if ($t.passes)   { continue }
         if ($t.blocked)  { continue }
         $ok = $true
-        foreach ($dep in $t.depends_on) {
+        foreach ($dep in (Get-TaskDependsOn $t)) {
             if (-not $byId.ContainsKey($dep) -or -not $byId[$dep].passes) {
                 $ok = $false
                 break
@@ -36,6 +45,14 @@ function Assert-TaskJsonValid {
         [int]$MaxFiles = 5
     )
     $data = Get-Content $Path -Raw | ConvertFrom-Json
+
+    $seen = @{}
+    foreach ($t in $data.tasks) {
+        if ($seen.ContainsKey($t.id)) {
+            throw "Duplicate task id: $($t.id)"
+        }
+        $seen[$t.id] = $true
+    }
 
     foreach ($t in $data.tasks) {
         if ($t.estimated_files -gt $MaxFiles) {
@@ -56,7 +73,7 @@ function Assert-TaskJsonValid {
         if ($state[$id] -eq 1) { throw "dependency cycle detected at $id" }
         if ($state[$id] -eq 2) { return }
         $state[$id] = 1
-        foreach ($dep in $byId[$id].depends_on) {
+        foreach ($dep in (Get-TaskDependsOn $byId[$id])) {
             if ($byId.ContainsKey($dep)) { & $visit $dep }
         }
         $state[$id] = 2
