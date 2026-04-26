@@ -15,16 +15,35 @@
 
 ---
 
-## 6 Gate × 4 层机制对照
+## 6 Gate × 4 层机制对照（v0.1.2 诚实修订）
 
-| Gate | 位置 | 层 1 Prompt | 层 2 Schema | 层 3 工件 | 层 4 Guard |
-|---|---|---|---|---|---|
-| CR-1 | init 段 1 后 | INIT.md §1 | `stage1.json.uncertainties` 必存在 | `research-stage1.md` | Claude 自检覆盖面 |
-| CR-2 | init 段 2 落盘前 | INIT.md §2 | `architecture.md` 每行含 `[A-C]` 正则 | `decisions.json` | `Select-String "\[C\]"` 自检 |
-| CR-3 | init 段 3 后 | INIT.md §3 | `estimated_files ≤ maxFilesPerTask` | task.json 本身 | `run.ps1` 启动 guard |
-| CR-4 | init 段 4 后 | INIT.md §4 | `cmd_check.json.status` 必有 | `cmd_check.json` | run.ps1 首次复验 |
-| CR-5 | run 每任务启动前 | RUN.md §2 | `research.md` 章节非空或 NO_RESEARCH_NEEDED | `task_<id>_research.md` | `guard_commit.ps1` |
-| CR-6 | run 每任务 commit 前 | RUN.md §5 | `task.notes` 含 CR-6 字段 | lessons.md 当日条目 | `guard_commit.ps1` |
+**重要澄清**：`guard_commit.ps1` 是 Claude Code PreToolUse hook，只拦 Claude 通过 Bash 调用的 `git commit`。`run.ps1` 自动循环路径的 commit 是 PS 进程内直接调用，**不触发 hook**。v0.1/v0.1.1 下 CR-5/6/P0-2 diff 等 gate 在自动路径上是虚的——只有 `verify_cmds` 复验生效。
+
+v0.1.2 起抽出 `lib/gate_runner.ps1` 的 `Test-DevLoopGates`，由两条路径共享调用，其他 gate 才真正双路径生效。
+
+### Init 阶段 gate（仅 Claude 手动触发，无自动路径）
+
+| Gate | 位置 | 层 1 Prompt | 层 2 Schema | 层 3 工件 |
+|---|---|---|---|---|
+| CR-1 | init 段 1 后 | INIT.md §1 | `stage1.json.uncertainties` 必存在 | `research-stage1.md` |
+| CR-2 | init 段 2 落盘前 | INIT.md §2 | `architecture.md` 每行含 `[A-C]` 正则 | `decisions.json` |
+| CR-3 | init 段 3 后 | INIT.md §3 | `estimated_files ≤ maxFilesPerTask` | task.json 本身 |
+| CR-4 | init 段 4 后 | INIT.md §4 | `cmd_check.json.status` 必有 | `cmd_check.json`；v0.1.2 起由 `materialize.ps1` 确定性落盘 |
+
+### Run 阶段 gate（双路径对比）
+
+| Gate | Claude 手动路径<br/>`guard_commit` hook | run.ps1 自动路径<br/>`Test-DevLoopGates` + `Invoke-VerifyRunner` |
+|---|---|---|
+| CR-5：research.md 存在 | ✓ v0.1 起 | ✗ v0.1 虚 → ✓ **v0.1.2 起真生效** |
+| CR-6：task.notes 含 `CR-6:` | ✓ v0.1 起 | ✗ v0.1 虚 → ✓ **v0.1.2 起真生效** |
+| CR-6 "有" → lessons 当日条目 | ✓ v0.1 起 | ✗ v0.1 虚 → ✓ **v0.1.2 起真生效** |
+| P0-2：task.json 结构防篡改 | ✓ v0.1.1 起 | ✗ 虚 → ✓ **v0.1.2 起真生效** |
+| verify_cmds 复验 | ✓ v0.1 起（`Invoke-VerifyRunner`） | ✓ v0.1 起（run.ps1 attempt loop 内调） |
+| `[skip-devloop]` 豁免 | ✓ 生效（hook 放行） | ✗ 不适用（run.ps1 不看 commit message） |
+
+**两条路径的角色**：
+- **手动路径**：人类或 Claude 临时手工 commit 时的兜底防线（外层）
+- **自动路径**：run.ps1 成功路径上的事务边界（内层）。v0.1.2 事务顺序：verify ✓ → Test-DevLoopGates ✓ → update task/progress → git add -A → git commit → 检查 `$LASTEXITCODE`
 
 ---
 
