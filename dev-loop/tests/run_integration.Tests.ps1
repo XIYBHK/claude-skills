@@ -125,6 +125,57 @@ Describe 'run.ps1 integration — fake claude exit 99 (P2-1 短路 + P3-1 blocke
     }
 }
 
+Describe 'run.ps1 integration — init.cmds 失败退出 (P4-1 exit 3)' {
+    It 'config.init.cmds 有 exit 1 时，run.ps1 应 exit 3' {
+        $sb = New-IntegSandbox
+        # 改 config 注入失败的 init.cmds，然后重新 commit 保持 working tree clean
+        $cfgPath = Join-Path $sb.Root '.devloop/config.json'
+        $cfg = Get-Content $cfgPath -Raw | ConvertFrom-Json
+        Add-Member -InputObject $cfg -NotePropertyName 'init' `
+                   -NotePropertyValue ([PSCustomObject]@{ cmds = @('exit 1') }) -Force
+        $cfg | ConvertTo-Json -Depth 10 | Set-Content $cfgPath -Encoding utf8
+        git -C $sb.Root add .devloop/config.json 2>&1 | Out-Null
+        git -C $sb.Root commit -q -m 'inject failing init.cmds' 2>&1 | Out-Null
+
+        New-FakeClaude -BinDir $sb.Bin -ExitCode 0
+        $r = Invoke-RunPs1 -Cwd $sb.Root -BinDir $sb.Bin
+
+        $r.ExitCode | Should -Be 3
+        $r.Output   | Should -Match 'harness precondition failed'
+    }
+}
+
+Describe 'run.ps1 integration — 连续 blocked 达阈值 (P4-1 exit 2)' {
+    It 'MaxConsecBlocked=1 + fake claude exit 99 → 第一条 blocked 后立即 exit 2' {
+        $sb = New-IntegSandbox
+        # 把 maxConsecBlocked 降到 1 并重新 commit
+        $cfgPath = Join-Path $sb.Root '.devloop/config.json'
+        $cfg = Get-Content $cfgPath -Raw | ConvertFrom-Json
+        $cfg.limits.maxConsecBlocked = 1
+        $cfg | ConvertTo-Json -Depth 10 | Set-Content $cfgPath -Encoding utf8
+        git -C $sb.Root add .devloop/config.json 2>&1 | Out-Null
+        git -C $sb.Root commit -q -m 'lower maxConsecBlocked to 1' 2>&1 | Out-Null
+
+        New-FakeClaude -BinDir $sb.Bin -ExitCode 99
+        # MaxTasks=0 让 run.ps1 能跑第二轮来触发 exit 2（第一轮仅 blocked++）
+        Push-Location $sb.Root
+        $prevPath = $env:Path
+        try {
+            $env:Path = $sb.Bin + ';' + $env:Path
+            $out = & pwsh -NoProfile -File '.devloop/scripts/run.ps1' `
+                         -MaxAttemptsPerTask 1 2>&1
+            $exitCode = $LASTEXITCODE
+            $outStr   = ($out | Out-String)
+        } finally {
+            $env:Path = $prevPath
+            Pop-Location
+        }
+        # 唯一 task 被标 blocked 后 $consecBlocked=1，if ($consecBlocked -ge 1) 立即触发
+        $exitCode | Should -Be 2
+        $outStr   | Should -Match '连续 1 个任务 blocked'
+    }
+}
+
 Describe 'run.ps1 integration — fake claude exit 0 + 有效产物 (happy path)' {
     It 'exit 0 且 task 更新合法时，run.ps1 生成新 commit 且 exit=0' {
         $sb = New-IntegSandbox

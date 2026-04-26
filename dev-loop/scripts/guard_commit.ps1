@@ -56,7 +56,9 @@ if ($cmd -match '\[skip-devloop\]') {
 #   - run.ps1 自动路径：主循环 commit 前调
 $gateRunnerPath = Join-Path $PSScriptRoot 'lib/gate_runner.ps1'
 if (-not (Test-Path $gateRunnerPath)) {
-    Write-Error "guard_commit: 缺 gate_runner.ps1 （预期路径：$gateRunnerPath）"
+    # P4-2: Stop 模式下 Write-Error 会 throw → 巧合也是 exit 1，但语义应是
+    # "hook 显式拒绝"而非"脚本挂了"。统一走 stderr + 显式 exit。
+    [Console]::Error.WriteLine("guard_commit: 缺 gate_runner.ps1 （预期路径：$gateRunnerPath）")
     exit 1
 }
 . $gateRunnerPath
@@ -72,18 +74,18 @@ $currentTask = $data.tasks | Where-Object { $_.id -eq $taskId } | Select-Object 
 
 $libPath = Join-Path $PSScriptRoot 'lib/verify_runner.ps1'
 if (-not (Test-Path $libPath)) {
-    Write-Error "guard_commit: 缺 verify_runner.ps1 （预期路径：$libPath）"
+    [Console]::Error.WriteLine("guard_commit: 缺 verify_runner.ps1 （预期路径：$libPath）")
     exit 1
 }
 . $libPath
 $configPath = '.devloop/config.json'
 if (-not (Test-Path $configPath)) {
-    Write-Error 'guard_commit: 缺 .devloop/config.json'
+    [Console]::Error.WriteLine('guard_commit: 缺 .devloop/config.json')
     exit 1
 }
 $config = Get-Content $configPath -Raw | ConvertFrom-Json
 if (-not (Invoke-VerifyRunner -Task $currentTask -Config $config)) {
-    Write-Error 'guard_commit: verify_cmds 复验失败，拒绝提交'
+    [Console]::Error.WriteLine('guard_commit: verify_cmds 复验失败，拒绝提交')
     exit 1
 }
 

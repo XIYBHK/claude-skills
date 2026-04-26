@@ -1,5 +1,40 @@
 # Dev-Loop Skill Changelog
 
+## v0.1.5 (2026-04-26)
+
+把 v0.1.4 留下的"`Write-Error; exit N` 隐性 exit 1 化"问题全面清理：
+`$ErrorActionPreference='Stop'` 下 `Write-Error` 会立即抛异常，pwsh
+以 exit 1 终止，`exit N` 永远跑不到（v0.1.4 只在 P3-1 一处用
+`[Console]::Error.WriteLine` 绕开）。
+
+- **P4-1** `scripts/run.ps1` 4 处统一修复：
+  - `harness precondition failed` → **exit 3**（之前因 Stop-throw 实际 exit 1）
+  - `gate check failed for task X` — 这处更隐蔽：原 `Write-Error`
+    会 throw，让其后的 `$verified = $false` 跑不到，整条 blocked 分支
+    被吞，主循环直接 exit 1。修复后 gate 失败才能真正走 blocked 路径。
+  - `git commit failed` → **exit 4**
+  - `连续 N 个任务 blocked` → **exit 2**
+- **P4-2** `scripts/guard_commit.ps1` 4 处：缺 lib / 缺 config / verify
+  复验失败等 hook 拒绝路径。exit 1 恰好与 Stop-throw 的 exit 1 相同，
+  不影响已有行为，但"显式拒绝"与"脚本挂了"语义应分开。
+- **P4-3** `scripts/browser_verify.ps1` 3 处：同上，最后 `exit $code`
+  对 Playwright 非零退出码的转发现在也真正可达。
+
+说明：`scripts/lib/gate_runner.ps1` 内部已显式设 `$ErrorActionPreference='Continue'`
+（P1-1 引入，函数内 `Write-Error` 不抛，配合 `return $false` 语义正常），
+不受此问题影响，本次不动。
+
+新增 Pester 测试：
+- `tests/run_integration.Tests.ps1`：
+  - **exit 3**：`config.init.cmds=['exit 1']` → `run.ps1` 必须 exit 3
+    且 stderr 含 `harness precondition failed`
+  - **exit 2**：`maxConsecBlocked=1` + fake claude exit 99 → 第一条 task
+    blocked 后立即 exit 2，stderr 含 `连续 1 个任务 blocked`
+  - （exit 4 "git commit failed" 的触发条件需要污染 HEAD state，
+    代价>收益，暂不覆盖，留给真实使用的烟雾测）
+
+Pester: **57/57**（v0.1.4 的 55 + exit 3 + exit 2）。
+
 ## v0.1.4 (2026-04-26)
 
 用户独立核验 v0.1.3 后发现终态退出语义的假阳性：

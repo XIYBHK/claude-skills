@@ -21,7 +21,9 @@ Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 
 if (-not (Test-Path $ConfigPath)) {
-    Write-Error "browser_verify: 缺 $ConfigPath"
+    # P4-3: Stop 模式下 Write-Error 会 throw → 巧合也是 exit 1 但语义混淆。
+    # 统一走 stderr + 显式 exit，让消息和退出码都走"显式拒绝"路径。
+    [Console]::Error.WriteLine("browser_verify: 缺 $ConfigPath")
     exit 1
 }
 $cfg = Get-Content $ConfigPath -Raw | ConvertFrom-Json
@@ -64,7 +66,7 @@ if (-not (Test-Path $screenshotDir)) {
 # 预检：npx 可用？
 $null = Get-Command npx -ErrorAction SilentlyContinue
 if (-not $?) {
-    Write-Error 'browser_verify: 未找到 npx。请装 Node.js 和 @playwright/test，或关闭 verify.browserTests.enabled'
+    [Console]::Error.WriteLine('browser_verify: 未找到 npx。请装 Node.js 和 @playwright/test，或关闭 verify.browserTests.enabled')
     exit 1
 }
 
@@ -148,7 +150,8 @@ $code = $LASTEXITCODE
 Remove-Item $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
 
 if ($code -ne 0) {
-    Write-Error "browser_verify: 失败 (exit=$code)"
+    # P4-3: 确保 exit $code（非零）语义可达，而不是被 Stop 吞成 exit 1
+    [Console]::Error.WriteLine("browser_verify: 失败 (exit=$code)")
     exit $code
 }
 exit 0

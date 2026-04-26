@@ -183,7 +183,9 @@ while ($true) {
     try {
         Invoke-InitCmds -Config $cfg
     } catch {
-        Write-Error "harness precondition failed: $_"
+        # P4-1: 原 Write-Error 在 $ErrorActionPreference='Stop' 下会 throw，
+        # 让进程以 exit 1 终止、永远跑不到 exit 3。改走 stderr 直写确保 exit 码。
+        [Console]::Error.WriteLine("harness precondition failed: $_")
         exit 3
     }
 
@@ -247,7 +249,9 @@ while ($true) {
     # guard_commit hook 拦 Claude 的 Bash，而 run.ps1 这条自动路径完全绕过）
     if ($verified) {
         if (-not (Test-DevLoopGates -Cwd '.')) {
-            Write-Error "gate check failed for task $($task.id)"
+            # P4-1: 原 Write-Error 在 Stop 模式下 throw，$verified=$false 跑不到、
+            # 主循环直接 exit 1；blocked 分支被吞。stderr 直写避开。
+            [Console]::Error.WriteLine("gate check failed for task $($task.id)")
             $verified = $false
         }
     }
@@ -268,7 +272,8 @@ while ($true) {
         $msg = Build-CommitMessage -Task $task -Config $cfg
         git commit -m $msg | Out-Null
         if ($LASTEXITCODE -ne 0) {
-            Write-Error "git commit failed for task $($task.id) (exit=$LASTEXITCODE)"
+            # P4-1: 同上，确保 exit 4 语义可达
+            [Console]::Error.WriteLine("git commit failed for task $($task.id) (exit=$LASTEXITCODE)")
             exit 4
         }
         $consecBlocked = 0
@@ -280,7 +285,8 @@ while ($true) {
         Append-Progress "| $ts | $($task.id) | $($task.title) | ✗ blocked | $MaxAttemptsPerTask | $reason |"
         $consecBlocked++
         if ($consecBlocked -ge $MaxConsecBlocked) {
-            Write-Error "连续 $MaxConsecBlocked 个任务 blocked，整体停止"
+            # P4-1: 同上，确保 exit 2 可达
+            [Console]::Error.WriteLine("连续 $MaxConsecBlocked 个任务 blocked，整体停止")
             exit 2
         }
     }
