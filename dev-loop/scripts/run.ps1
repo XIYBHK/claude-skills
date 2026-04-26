@@ -93,6 +93,28 @@ function Get-LastError {
     return ($lines -join "`n")
 }
 
+# P0-1: session-start smoke。对齐前作 init.sh 语义：
+# 每任务进入 attempt loop 前跑 config.init.cmds 做项目健康度检查，
+# 任一失败 → throw，主循环捕获后 exit 3 (harness precondition failed)。
+# init 或 cmds 缺字段/为空 → 跳过，向后兼容。
+function Invoke-InitCmds {
+    param([Parameter(Mandatory)][object]$Config)
+    $initProp = $Config.PSObject.Properties['init']
+    if ($null -eq $initProp -or $null -eq $initProp.Value) { return }
+    $cmdsProp = $initProp.Value.PSObject.Properties['cmds']
+    if ($null -eq $cmdsProp -or $null -eq $cmdsProp.Value) { return }
+    $cmds = @($cmdsProp.Value)
+    foreach ($cmd in $cmds) {
+        if ([string]::IsNullOrWhiteSpace($cmd)) { continue }
+        Write-Host ">>> [init] $cmd"
+        & pwsh -NoProfile -Command $cmd
+        $code = $LASTEXITCODE
+        if ($code -ne 0) {
+            throw "init check failed: $cmd (exit=$code)"
+        }
+    }
+}
+
 # 测试钩子：不启动主循环
 if ($LoadFunctionsOnly) { return }
 
@@ -118,6 +140,14 @@ while ($true) {
         $done++
         if ($MaxTasks -gt 0 -and $done -ge $MaxTasks) { break }
         continue
+    }
+
+    # P0-1: session-start smoke
+    try {
+        Invoke-InitCmds -Config $cfg
+    } catch {
+        Write-Error "harness precondition failed: $_"
+        exit 3
     }
 
     $verified = $false

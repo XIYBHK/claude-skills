@@ -75,3 +75,22 @@ Describe 'Assert-DevLoopInitialized' {
         try { { Assert-DevLoopInitialized } | Should -Not -Throw } finally { Pop-Location }
     }
 }
+
+Describe 'Invoke-InitCmds (P0-1)' {
+    It '缺 init 字段直接返回不抛异常' {
+        $cfg = '{"verify":{"globalCmds":[]},"limits":{"maxFilesPerTask":5}}' | ConvertFrom-Json
+        { Invoke-InitCmds -Config $cfg } | Should -Not -Throw
+    }
+    It '空 cmds 数组直接返回不抛异常' {
+        $cfg = '{"init":{"cmds":[]},"verify":{"globalCmds":[]}}' | ConvertFrom-Json
+        { Invoke-InitCmds -Config $cfg } | Should -Not -Throw
+    }
+    It '所有 cmd 成功则不抛' {
+        $cfg = '{"init":{"cmds":["exit 0","exit 0"]}}' | ConvertFrom-Json
+        { Invoke-InitCmds -Config $cfg } | Should -Not -Throw
+    }
+    It '任一 cmd 失败则抛异常包含 init check failed' {
+        $cfg = '{"init":{"cmds":["exit 1"]}}' | ConvertFrom-Json
+        { Invoke-InitCmds -Config $cfg } | Should -Throw '*init check failed*'
+    }
+}
