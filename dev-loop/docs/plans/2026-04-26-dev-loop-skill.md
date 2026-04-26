@@ -1,5 +1,12 @@
 # dev-loop Skill Implementation Plan
 
+> **历史归档（非当前 SSoT）**
+>
+> 本文件是 v0.1 初始实施计划，保留旧代码片段和旧假设。
+> 当前 v0.1.6 实现以 `scripts/`、`templates/`、`INIT.md`、`RUN.md`、
+> `CRITICAL_REVIEW.md` 和 `CHANGELOG.md` 为准。本文件中的 SSoT 说法只对
+> 当时 v0.1 实施阶段有效。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 在 `~/.claude/skills/dev-loop/` 构建一个通用的、基于 Anthropic harness 思想的开发循环 skill v0.1。能通过 `/dev-loop init` 为任意新项目生成 `.devloop/` 工作流（`CLAUDE.md` / `architecture.md` / `task.json` / `config.json` / `run.ps1` / `guard_commit.ps1` / ...），并用 `run.ps1` 驱动 headless Claude 循环完成任务。
@@ -8,7 +15,7 @@
 
 **Tech Stack:** PowerShell 7 (Windows), Pester 5.x（单元测试）, Markdown, JSON Schema。完整设计规格见 `~/.claude/skills/dev-loop/docs/specs/2026-04-26-dev-loop-skill-design.md`（下文简称 **spec**）。
 
-**SSoT 说明：** 本 plan 对 markdown 文档任务（RUN.md / INIT.md / CRITICAL_REVIEW.md / references）以"按 spec §X.Y 复制并做 Y 调整"方式引用 spec 章节。这不是 placeholder —— spec 是设计决策的单一事实源，在同一仓库同一目录下始终可读；plan 是执行顺序的单一事实源。对脚本类任务（PowerShell .ps1）一律贴完整代码。
+**历史 SSoT 说明：** 本 plan 对 markdown 文档任务（RUN.md / INIT.md / CRITICAL_REVIEW.md / references）以"按 spec §X.Y 复制并做 Y 调整"方式引用 spec 章节。这不是 placeholder —— spec 在 v0.1 初始实施时是设计决策的单一事实源；当前 v0.1.6 不再以本 plan/spec 为事实源。
 
 ---
 

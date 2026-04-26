@@ -24,7 +24,7 @@ v0.1 `browserTests` 只是空壳配置字段，runner 不消费。
 
 脚本首次运行时会自动 `npx playwright install chromium`。
 
-若项目没有 Node/Playwright 而 `browserTests.enabled=true` → 脚本会 Write-Error 退出 1，让用户装或关闭 enabled。
+若项目没有 Node/Playwright 而 `browserTests.enabled=true` → 脚本会直写 stderr 并显式 exit 1，让用户装依赖或关闭 enabled。
 
 ## 配置字段
 
@@ -48,13 +48,17 @@ v0.1 `browserTests` 只是空壳配置字段，runner 不消费。
 
 ## 与 verify_cmds 的关系
 
-`browser_verify.ps1` 作为 `verify.globalCmds` 里的**普通一条命令**被 `Invoke-VerifyRunner` 调用——不侵入 runner 逻辑。如果某个任务不需要浏览器检查，它不会跑（因为它在 globalCmds 里，对所有任务生效，通常这就是 UI 项目的意图）。
+`browser_verify.ps1` 作为 `verify.globalCmds` 里的**普通一条命令**被 `Invoke-VerifyRunner` 调用——不侵入 runner 逻辑。因此它对所有任务生效；这通常正是 UI 项目的意图。
 
 ## 手工关闭
 
-某一任务想暂时跳过浏览器检查（比如纯后端 API 任务）：
-- 不改 globalCmds（影响所有任务）
-- 改法：把对应 task 的 `verify_cmds` 显式替换成不含浏览器验证的命令集（但 guard_commit 的 P0-2 gate 会检 verify_cmds 是否被清空）
+v0.1.6 没有 per-task 浏览器跳过开关。只要 `browser_verify.ps1` 位于
+`verify.globalCmds`，它就会对所有任务生效；改某个 task 的 `verify_cmds`
+不能跳过全局浏览器检查。
+
+临时关闭只能由人类显式修改 `.devloop/config.json`，Claude 不应自行改：
+- 将 `verify.browserTests.enabled` 改为 `false`；或
+- 从 `verify.globalCmds` 移除 `pwsh -NoProfile -File .devloop/scripts/browser_verify.ps1`
 
 更好的做法：**v0.2** 增加 per-task 的 `skip_browser_tests` 字段。
 

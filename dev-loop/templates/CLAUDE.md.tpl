@@ -5,10 +5,12 @@
 ## 每任务必读清单（run 阶段冷启动）
 
 按顺序读取：
-1. `.devloop/task.json` — 定位当前任务
-2. `architecture.md` — 项目架构与 [A/B/C] 证据等级
-3. `.devloop/lessons.md` — 历史避坑经验
-4. （attempt > 1 时）`.devloop/logs/task_<id>_attempt_<n-1>.log` — 上次错误
+1. `git log --oneline -20` — 理解近期提交轨迹与 HEAD 状态
+2. `.devloop/task.json` — 定位当前任务
+3. `architecture.md` — 项目架构与 [A/B/C] 证据等级
+4. `.devloop/progress.md` — 过往任务的完成/阻塞轨迹
+5. `.devloop/lessons.md` — 历史避坑经验
+6. （attempt > 1 时）`.devloop/logs/task_<id>_attempt_<n-1>.log` — 上次错误
 
 ## 开发循环（run.ps1 驱动）
 
@@ -26,14 +28,16 @@
 
 ## 测试判定规则
 
-<由 init 段 1 Q3 的回答填充>
+以 `.devloop/config.json` 的 `verify.globalCmds` 和各 task 的
+`verify_cmds` 为准。UI 项目若启用 `verify.browserTests.enabled`，
+浏览器验证由 `.devloop/scripts/browser_verify.ps1` 执行。
 
 ## Commit 类型枚举
 
-<由 init 段 1 Q4 填充，例如：feat / fix / refactor / chore / docs / test>
+以 `.devloop/task.json` 中各 task 的 `category` 字段为准。
 
 ## Git 配置
 
-- 主分支：<由 init 段 1 Q5 填充>
+- 主分支：以 `.devloop/config.json` 的 `git.mainBranch` 为准
 - AutoPush：关（显式手动推送）
 - AutoPR：关

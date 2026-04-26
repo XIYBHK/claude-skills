@@ -42,3 +42,12 @@ Pester 5 的 `Should -Throw` 匹配**异常消息**用 `*...*` glob 模式，不
 ## PSScriptRoot 在 dot-sourcing 后
 
 dot-source 脚本时 `$PSScriptRoot` 指向**被 source 的脚本**的目录。在 `guard_commit.ps1` 中用 `Join-Path $PSScriptRoot 'lib/...'` 才能稳定定位 lib。
+
+## `$ErrorActionPreference='Stop'` 与退出码
+
+在脚本顶层设置 `$ErrorActionPreference='Stop'` 后，`Write-Error; exit N`
+里的 `exit N` 不会执行，进程通常变成 exit 1。v0.1.6 的顶层脚本用
+`Exit-WithError` 直写 stderr 后显式 `exit N`，保持 exit 2/3/4/5 语义。
+
+例外：`scripts/lib/gate_runner.ps1` 在函数内部使用
+`$ErrorActionPreference='Continue'`，`Write-Error` 后返回 `$false` 是有意设计。

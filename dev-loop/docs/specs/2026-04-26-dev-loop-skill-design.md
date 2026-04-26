@@ -1,9 +1,16 @@
 # `dev-loop` Skill · 设计规格
 
+> **历史归档（非当前 SSoT）**
+>
+> 本文件记录 v0.1 初始设计，不代表 v0.1.6 的最新实现。
+> 当前事实源请看 `SKILL.md`、`INIT.md`、`RUN.md`、`CRITICAL_REVIEW.md`、
+> `CHANGELOG.md` 和 `scripts/`。本文件内的 `cmd_check.json`、`browserTests`
+> v0.3、旧 `Write-Error` 示例等内容保留为历史背景，不应用作当前实现依据。
+
 | 字段 | 值 |
 |---|---|
 | 文档日期 | 2026-04-26 |
-| 状态 | Design (pending user review) |
+| 状态 | Historical archive (v0.1 initial design) |
 | 作者 | XIYBHK |
 | 设计方法 | `superpowers:brainstorming` 七节式对话澄清 |
 | 灵感来源 | Anthropic 博客《effective harnesses for long-running agents》+ `SKELOT5.6` 项目里经过实战的 harness 工作流 |

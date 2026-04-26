@@ -31,8 +31,12 @@ digraph dev_loop {
 
 - `INIT.md` — init 阶段 Claude 主动 Read
 - `RUN.md` — run 阶段 headless Claude 冷启动时 Read
-- `CRITICAL_REVIEW.md` — 6 个 CR Gate 完整判定准则
-- `docs/specs/2026-04-26-dev-loop-skill-design.md` — 完整设计规格（SSoT）
+- `CRITICAL_REVIEW.md` — CR Gate 判定准则与 v0.1.6 双路径事务边界
+- `CHANGELOG.md` — 当前版本行为变更记录
+
+当前事实源：运行行为以 `scripts/`、`templates/`、`INIT.md`、`RUN.md`、
+`CRITICAL_REVIEW.md` 和 `CHANGELOG.md` 为准。
+`docs/specs/`、`docs/plans/` 是 v0.1 初始设计/实施归档，不再作为现行 SSoT。
 
 ## 绝不做的事（红线）
 
@@ -51,4 +55,5 @@ digraph dev_loop {
 - `headless-gotchas.md` — Windows + headless Claude 已知坑
 - `evidence-levels.md` — A/B/C 证据等级判定与升级流程
 - `task-granularity.md` — 粗粒度 + 5 文件约束判例
+- `browser-testing.md` — v0.1.2+ UI/浏览器 E2E 验证实现说明
 - `ROADMAP.md` — v0.2+ 扩展计划

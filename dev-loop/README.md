@@ -35,17 +35,19 @@ v0.2+ 扩展见 `references/ROADMAP.md`。
 
 - `SKILL.md` / `INIT.md` / `RUN.md` / `CRITICAL_REVIEW.md` — 认知骨架
 - `templates/` — 8 份静态模板
-- `scripts/run.ps1` + `guard_commit.ps1` + `lib/` — PowerShell 执行骨架
+- `scripts/run.ps1` + `materialize.ps1` + `guard_commit.ps1` + `browser_verify.ps1` + `lib/` — PowerShell 执行骨架
 - `tests/` — Pester 单元测试
 - `references/` — 按需查阅参考（schemas / failure-playbook / ...）
-- `docs/specs/` — 设计规格
-- `docs/plans/` — 实施计划
+- `docs/specs/` — v0.1 初始设计归档（历史，不是当前 SSoT）
+- `docs/plans/` — v0.1 初始实施计划归档（历史，不是当前 SSoT）
 
 ## 文档
 
-- [设计规格](docs/specs/2026-04-26-dev-loop-skill-design.md) — 完整架构与决策理由
-- [实施计划](docs/plans/2026-04-26-dev-loop-skill.md) — 按任务执行顺序
+- [INIT](INIT.md) / [RUN](RUN.md) / [CRITICAL_REVIEW](CRITICAL_REVIEW.md) — 当前运行协议
+- [references](references/) — schemas / failure-playbook / browser-testing / roadmap
 - [CHANGELOG](CHANGELOG.md) — 版本变更
+- [设计规格](docs/specs/2026-04-26-dev-loop-skill-design.md) — v0.1 历史设计归档
+- [实施计划](docs/plans/2026-04-26-dev-loop-skill.md) — v0.1 历史实施归档
 
 ## 发布流程
 

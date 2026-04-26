@@ -47,7 +47,7 @@
 
 1. 读 `architecture.md` + `decisions.json`
 2. 按粗粒度 + 单任务 ≤ 5 文件拆分
-3. 每条 task schema（见 spec §6.1）必须完整
+3. 每条 task schema（见 `references/schemas.md`）必须完整
 4. **CR-3 自动触发**：自问 4 问题
    - `estimated_files > 5`？
    - 依赖图有环？
@@ -56,9 +56,9 @@
 5. 任一未通过 → 重拆并重跑 CR-3
 6. 交用户审；落盘 `.devloop/task.json`
 
-## 段 4：配套文件 + CR-4 命令验证
+## 段 4：配套文件 + CR-4 配置审查
 
-**v0.1.2 起**：Claude 只产出一份 `.devloop/init/payload.json`（段 1-3 的结构化汇总），具体文件拷贝/占位符替换/`.gitignore` 追加/`browserTests` 映射等**全部由 `scripts/materialize.ps1` 确定性完成**。
+**v0.1.2 起**：Claude 只产出一份 `.devloop/init/payload.json`（段 1-3 的结构化汇总），具体文件拷贝/项目名占位符替换/`.gitignore` 追加/`browserTests` 映射等**全部由 `scripts/materialize.ps1` 确定性完成**。
 
 ```powershell
 pwsh -File ~/.claude/skills/dev-loop/scripts/materialize.ps1 `
@@ -67,16 +67,20 @@ pwsh -File ~/.claude/skills/dev-loop/scripts/materialize.ps1 `
 ```
 
 `payload.json` schema 见 `scripts/materialize.ps1` 顶部注释块，字段：
-- `project` / `q3` / `context7Available` / `architectureMd` / `tasks`
+- `project` / `q3` / `commitCategories` / `context7Available` / `architectureMd` / `tasks`
+
+其中 `commitCategories` 当前不被 `materialize.ps1` 消费，仅作为 payload 审计
+和未来模板扩展的预留字段；运行时以 `tasks[].category` 为准。
 
 落盘产物（由脚本一次性生成）：
 
 | 生成物 | 来源 |
 |---|---|
-| `CLAUDE.md`（根） | `templates/CLAUDE.md.tpl` + 前三段产物 |
+| `CLAUDE.md`（根） | `templates/CLAUDE.md.tpl` + `project.name` |
 | `.devloop/config.json` | `templates/config.json.tpl` + Q3 verify_cmds |
 | `.devloop/scripts/run.ps1` | 从 skill scripts 拷贝 |
 | `.devloop/scripts/guard_commit.ps1` | 从 skill scripts 拷贝 |
+| `.devloop/scripts/browser_verify.ps1` | 从 skill scripts 拷贝 |
 | `.devloop/scripts/lib/*.ps1` | 从 skill scripts/lib 拷贝 |
 | `.claude/settings.json` | `templates/claude-settings.json.tpl` |
 | `.gitignore`（追加） | `templates/gitignore.tpl` |
@@ -95,19 +99,26 @@ pwsh -File ~/.claude/skills/dev-loop/scripts/materialize.ps1 `
 | 手动验证兜底 | `false` | 无法自动化 |
 
 UI 项目开 `browserTests.enabled=true` 时：
-1. 必须同时填 `verify.browserTests.url` 和 `requiredSelectors` 至少 1 项（否则 `cmd_check.json` 标 fail）
+1. 必须同时填 `verify.browserTests.url` 和 `requiredSelectors` 至少 1 项；否则必须让用户补充后再落盘
 2. 必须把 `pwsh -NoProfile -File .devloop/scripts/browser_verify.ps1` **追加到** `verify.globalCmds`（v0.1.2 起由 `scripts/browser_verify.ps1` 真实消费，详见 `references/browser-testing.md`）
 3. 用户项目须有 Node.js + `@playwright/test`（首次运行自动 `npx playwright install chromium`）
 
-**CR-4 自动触发**：对 `config.json` 每条命令做两类验证：
+**CR-4 当前语义（v0.1.6）**：段 4 不再承诺生成 `cmd_check.json`。
+Claude 在用户审批前必须对 `config.json` 中的命令做静态可解释性审查，
+但真正的可执行性以 run 阶段实跑为准：
 
 1. **可执行程序检测**：提取首个 token（`npm run build` → `npm`），跑 `<token> --version`
 2. **Script/任务存在性**：
    - npm scripts → 解析 `package.json.scripts`
    - make targets → 解析 `Makefile`
-   - 其他复合命令 → `cmd_check.json` 标 `unverifiable:true`，留给 run.ps1 首次运行兜底
+   - 其他复合命令 → 标记为“人工确认”，让用户确认后再落盘
+3. **运行时兜底**：
+   - `config.init.cmds` 由 `run.ps1` 的 `Invoke-InitCmds` 实跑，失败时 exit 3
+   - `verify.globalCmds` + `task.verify_cmds` 由 `Invoke-VerifyRunner` 实跑，失败则该 attempt 不通过
+   - UI 项目的 `browser_verify.ps1` 作为一条 `verify.globalCmds` 被同一机制调用
 
-失败项写入 `.devloop/init/cmd_check.json` `status:fail`，必须让用户澄清或修正。
+若静态审查发现缺命令、缺 npm script、缺 browser selector 或无法解释的验证链，
+必须让用户澄清或修正；不要虚构 `.devloop/init/cmd_check.json` 作为证据。
 
 ### 段 4 收尾
 
@@ -118,7 +129,8 @@ git commit -m "chore(dev-loop): 初始化 dev-loop harness
 - architecture.md: 架构与证据等级
 - .devloop/task.json: <N> 个粗粒度任务
 - CLAUDE.md: 工作流定义
-- .devloop/scripts/run.ps1: 循环驱动器"
+- .devloop/scripts/run.ps1: 循环驱动器
+- .devloop/scripts/browser_verify.ps1: UI 浏览器验证器"
 ```
 
 输出给用户：

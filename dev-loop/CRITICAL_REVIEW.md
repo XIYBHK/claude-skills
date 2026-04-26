@@ -15,7 +15,7 @@
 
 ---
 
-## 6 Gate × 4 层机制对照（v0.1.2 诚实修订）
+## 6 Gate × 4 层机制对照（v0.1.6）
 
 **重要澄清**：`guard_commit.ps1` 是 Claude Code PreToolUse hook，只拦 Claude 通过 Bash 调用的 `git commit`。`run.ps1` 自动循环路径的 commit 是 PS 进程内直接调用，**不触发 hook**。v0.1/v0.1.1 下 CR-5/6/P0-2 diff 等 gate 在自动路径上是虚的——只有 `verify_cmds` 复验生效。
 
@@ -28,7 +28,12 @@ v0.1.2 起抽出 `lib/gate_runner.ps1` 的 `Test-DevLoopGates`，由两条路径
 | CR-1 | init 段 1 后 | INIT.md §1 | `stage1.json.uncertainties` 必存在 | `research-stage1.md` |
 | CR-2 | init 段 2 落盘前 | INIT.md §2 | `architecture.md` 每行含 `[A-C]` 正则 | `decisions.json` |
 | CR-3 | init 段 3 后 | INIT.md §3 | `estimated_files ≤ maxFilesPerTask` | task.json 本身 |
-| CR-4 | init 段 4 后 | INIT.md §4 | `cmd_check.json.status` 必有 | `cmd_check.json`；v0.1.2 起由 `materialize.ps1` 确定性落盘 |
+| CR-4 | init 段 4 后 | INIT.md §4 | `config.verify.globalCmds` 可解释；`task.verify_cmds` 非空 | `payload.json` + `config.json`；v0.1.6 不生成 `cmd_check.json` |
+
+CR-4 的真实执行兜底在 run 阶段：
+`config.init.cmds` 失败 → `run.ps1` exit 3；
+`verify.globalCmds` / `task.verify_cmds` 失败 → 当前 attempt 不通过；
+UI 浏览器检查通过 `browser_verify.ps1` 作为 `verify.globalCmds` 中的一条命令执行。
 
 ### Run 阶段 gate（双路径对比）
 
@@ -43,7 +48,20 @@ v0.1.2 起抽出 `lib/gate_runner.ps1` 的 `Test-DevLoopGates`，由两条路径
 
 **两条路径的角色**：
 - **手动路径**：人类或 Claude 临时手工 commit 时的兜底防线（外层）
-- **自动路径**：run.ps1 成功路径上的事务边界（内层）。v0.1.2 事务顺序：verify ✓ → Test-DevLoopGates ✓ → update task/progress → git add -A → git commit → 检查 `$LASTEXITCODE`
+- **自动路径**：run.ps1 成功路径上的事务边界（内层）。v0.1.6 事务顺序：
+  headless Claude exit code 为 0 → `Invoke-VerifyRunner` ✓ →
+  `Test-DevLoopGates` ✓ → update task/progress → `git add -A` →
+  `git commit` → 检查 `$LASTEXITCODE`。
+
+## run.ps1 exit code 语义（v0.1.6）
+
+| code | 含义 |
+|---|---|
+| 0 | 全部 runnable 任务完成，或按 `-MaxTasks` 正常停止 |
+| 2 | 连续 blocked 达到 `maxConsecBlocked` |
+| 3 | harness precondition 失败，例如 `config.init.cmds` 非零 |
+| 4 | 验证与 gate 已通过，但 `git commit` 失败 |
+| 5 | 无 runnable task，但仍有 blocked 或 pending 任务 |
 
 ---
 
