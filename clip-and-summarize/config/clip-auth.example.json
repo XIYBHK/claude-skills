@@ -1,0 +1,10 @@
+{
+  "_comment": "复制为 clip-auth.json 后填入真实 cookie；clip-auth.json 在 .gitignore 里，跨机器不会同步",
+  "zhihu": {
+    "_xsrf": "从浏览器 DevTools → Application → Cookies 抓取",
+    "z_c0": "同上"
+  },
+  "bilibili": {
+    "SESSDATA": "登录后从 .bilibili.com 域名的 cookie 抓取"
+  }
+}

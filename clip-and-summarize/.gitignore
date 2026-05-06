@@ -1,0 +1,6 @@
+# 本地机器配置（vault 路径、cookies 等），跨机器 git 同步时必须忽略
+config/local.json
+config/clip-auth.json
+
+# 中间态
+scripts/_tmp_note.md
