@@ -1,17 +1,17 @@
 ---
-name: web-design-engineer
+name: web-design-engineer Web 设计工程
 description: |
-  Build high-quality visual Web artifacts using HTML/CSS/JavaScript/React — web pages, landing pages, dashboards, interactive prototypes, HTML slide decks, animated demos, UI mockups, data visualizations, and more.
-  Use this skill whenever the user's request involves a visual, interactive, or front-end deliverable, including:
-  - Creating web pages, landing pages, dashboards, marketing pages
-  - Building interactive prototypes or UI mockups (with device frames)
-  - Building HTML slide decks / presentations
-  - Creating CSS/JS animations or timeline-driven animated demos
-  - Turning design mockups, screenshots, or PRDs into interactive implementations
-  - Data visualization (Chart.js / D3, etc.)
-  - Design system / UI Kit exploration
-  Even if the user doesn't explicitly say "HTML" or "web page," this skill applies whenever the intent is to produce something visual, interactive, or presentational.
-  Not applicable: pure back-end logic, CLI tools, data-processing scripts, non-visual code tasks, command-line debugging.
+  使用 HTML/CSS/JavaScript/React 构建高质量的视觉 Web 产物 —— 网页、落地页、仪表盘、交互原型、HTML 幻灯片、动画 Demo、UI mockup、数据可视化等。
+  只要用户的需求涉及视觉、交互或前端交付物，就使用此 skill，包括：
+  - 创建网页、落地页、仪表盘、营销页
+  - 构建交互原型或 UI mockup（含设备边框）
+  - 构建 HTML 幻灯片 / 演示文稿（slide decks / presentations）
+  - 创建 CSS/JS 动画或时间轴驱动的动画 Demo
+  - 将设计稿、截图或 PRD 转为可交互的实现
+  - 数据可视化（Chart.js / D3 等）
+  - Design system / UI Kit 探索
+  即使用户没有明确说 "HTML" 或 "web page"，只要意图是产出视觉、交互或演示类（presentational）成果，本 skill 即适用。
+  不适用（Not applicable）：纯后端逻辑、CLI 工具、数据处理脚本、非视觉代码任务、命令行调试。
 ---
 
 # Web Design Engineer
